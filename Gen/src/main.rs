@@ -291,8 +291,6 @@ fn load_wordlist(input_path : &str) -> Vec<String>
     words
 }
 
-
-
 fn main() {
     let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
     let glove_200_path = r"C:\Users\Dan\glove\glove.twitter.27B.200d.txt";
