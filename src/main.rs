@@ -130,11 +130,7 @@ impl MemmappedSpace
         }
     }
 
-}
-
-impl<'a> MemmappedSpace
-{
-    pub fn find_linear(&'a self, s : &str) -> Option<&'a [f32]>
+    pub fn find_offset_linear(&self, s : &str) -> Option<usize>
     {
         let mut offset = HEADER_SIZE as usize;
         for i in 0..self.size
@@ -150,11 +146,8 @@ impl<'a> MemmappedSpace
 
                 if (s.eq_ignore_ascii_case(string))
                 {
-                    // Found!
                     let bytes_start = string_start + string_size;
-                    let bytes = &self.mmap[bytes_start..bytes_start + 4 * self.dimensions];
-                    let vector = unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const f32, self.dimensions) };
-                    return Some(vector);
+                    return Some(bytes_start);
                 }
             }
 
@@ -162,19 +155,27 @@ impl<'a> MemmappedSpace
 
         }
 
-        return None;
+        None
+    }
+}
+
+impl<'a> MemmappedSpace
+{
+    pub fn get(&'a self, offset : usize) -> &'a [f32]
+    {
+        let bytes = &self.mmap[offset..offset + 4 * self.dimensions];
+        let vector = unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const f32, self.dimensions) };
+        vector
+    }
+    pub fn find_linear(&'a self, s : &str) -> Option<&'a [f32]>
+    {
+        self.find_offset_linear(s).map(|x| self.get(x))
     }
 }
 
 fn norm(v: &[f32]) -> Vec<f32>
 {
-    let mut mag2 = 0.;
-    for &x in v
-    {
-        mag2 += x as f64 * x as f64;
-    }
-
-    let mag = mag2.sqrt();
+    let mag = get_mag(v);
 
     let mut normed = Vec::with_capacity(v.len());
     for &x in v
@@ -197,20 +198,130 @@ fn dot(u : &[f32], v : &[f32]) -> f32
     dot
 }
 
+fn get_mag(v : &[f32]) -> f64
+{
+    let mut mag2 = 0.;
+    for &x in v
+    {
+        mag2 += x as f64 * x as f64;
+    }
+
+    let mag = mag2.sqrt();
+    mag
+}
+
+fn similarity(u : &[f32], v : &[f32]) -> f32
+{
+    let mag_u = get_mag(u);
+    let mag_v = get_mag(v);
+    let k = 1.0 / (mag_u * mag_v);
+
+    let mut dot = 0.;
+
+    for i in 0..u.len()
+    {
+        dot += (k * u[i] as f64 * v[i] as f64) as f32;
+    }
+
+    dot
+}
+
+fn load_wordlist(input_path : &str) -> Vec<String>
+{
+    let f = File::open(input_path).unwrap();
+    let mut reader = std::io::BufReader::new(f);
+
+    let mut line = String::new();
+    let mut words = Vec::new();
+    while let Ok(size) = reader.read_line(&mut line)
+    {
+        if (size == 0)
+        {
+            break;
+        }
+        words.push(line.trim().to_lowercase());
+        line.clear();
+    }
+
+    words
+}
+
+fn get_best(space : &MemmappedSpace, target : &str, words : &[(String, usize)]) -> Vec<(String, usize, f32)>
+{
+    let t_offset = space.find_offset_linear(target).unwrap();
+    let t_vect = space.get(t_offset);
+
+    let mut all = Vec::new();
+
+    for (word, woffset) in words {
+        if (t_offset == *woffset) {
+            continue;
+        }
+
+        let sim = similarity(space.get(*woffset), t_vect);
+        all.push((word.clone(), *woffset, sim));
+    }
+
+    all.sort_by(|(_, _, x), (_, _, y)| {
+        y.partial_cmp(x).unwrap()
+    });
+
+    all
+}
+
 fn main() {
-    //let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
-    //transform_and_write(glove_25_path, r"C:\Users\Dan\vecrypto\glove_25.embspace");
-
-
+    let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
+    let glove_200_path = r"C:\Users\Dan\glove\glove.twitter.27B.200d.txt";
     let glove_25_bin_path = r"C:\Users\Dan\vecrypto\glove_25.embspace";
-    let space = MemmappedSpace::load(glove_25_bin_path);
+    let glove_200_bin_path = r"C:\Users\Dan\vecrypto\glove_200.embspace";
+    let wordlist_path = r"C:\Users\Dan\vecrypto\wordlist.txt";
+    //let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
+    //transform_and_write(glove_200_path, glove_200_bin_path);
 
-    let hot = space.find_linear("hot").unwrap();
-    let hot_unit = norm(hot);
-    let cold = space.find_linear("cold").unwrap();
-    let cold_unit = norm(cold);
+    let space = MemmappedSpace::load(glove_200_bin_path);
+    let words = load_wordlist(wordlist_path);
 
-    let sim = dot(&hot_unit, &cold_unit);
+    let mut offsets = Vec::new();
+    for word in &words {
+        //println!("Finding {}", word);
+        if let Some(offset) = space.find_offset_linear(word)
+        {
+            //println!("Adding {} {}", word, offset);
+            offsets.push((word.to_owned(), offset));
+        }
+    }
 
-    println!("hot cold similarity - {}", sim);
+    let i = 131;
+    let (word, offset) = &offsets[i];
+    let vec = space.get(*offset);
+    let vec_norm = norm(vec);
+
+    println!("Target word '{}' offset {}", word, offset);
+
+    let closest : Vec<_> = get_best(&space, word, &offsets).into_iter().take(5).collect();
+
+    for (a, b, c) in &closest {
+        println!("{} {} {}", a, b, c);
+    }
+
+    loop {
+        let mut buffer = String::new();
+        std::io::stdin().read_line(&mut buffer).unwrap();
+        let input_word = buffer.trim().to_lowercase();
+        let input_vec = space.find_linear(&input_word).unwrap();
+        let input_vec_norm = norm(input_vec);
+        let sim = dot(&vec_norm, &input_vec_norm);
+
+        println!("{} similarity {}", input_word, sim);
+    }
+
+    //let hot = space.find_linear("hot").unwrap();
+    //let hot_unit = norm(hot);
+    //let cold = space.find_linear("train").unwrap();
+    //let cold_unit = norm(cold);
+
+    //let sim = dot(&hot_unit, &cold_unit);
+
+    //println!("hot cold similarity - {}", sim);
+
 }
