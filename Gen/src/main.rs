@@ -72,18 +72,28 @@ impl TextEmbeddingSpace {
         }
     }
 
-    pub fn write_binary_to(&self, path : &str) {
+    pub fn write_binary_to(&self, path : &str, filter_list : Option<&[String]>) {
         let out_file = File::create(path).unwrap();
         let mut buf_writer = std::io::BufWriter::new(out_file);
 
         println!("Writing headers..");
         buf_writer.write(&MAGIC).unwrap();
-        buf_writer.write(&self.embeddings.len().to_le_bytes()).unwrap();
+        let count = filter_list.map(|x| x.len()).unwrap_or(self.embeddings.len());
+        buf_writer.write(&count.to_le_bytes()).unwrap();
         buf_writer.write(&self.embeddings[0].pos.len().to_le_bytes()).unwrap();
         println!("Done");
 
+        let mut written = 0;
         for (i, embedding) in self.embeddings.iter().enumerate()
         {
+            if let Some(filter) = (filter_list) {
+                if (!filter.iter().any(|x| x.eq_ignore_ascii_case(&embedding.word)))
+                {
+                     // Not in filter list, skip
+                    continue;
+                }
+            }
+
             if (i % 10000 == 0)
             {
                 println!("{} {}", i, embedding.word);
@@ -95,16 +105,28 @@ impl TextEmbeddingSpace {
                 let vec_as_bytes = std::slice::from_raw_parts(embedding.pos.as_ptr() as *const u8, embedding.pos.len() * 4);
                 buf_writer.write(vec_as_bytes).unwrap();
             }
+
+            written += 1;
         }
+
+        assert_eq!(written, count);
     }
 }
 
-fn transform_and_write(input_path : &str, output_path : &str) {
+fn transform_and_write(input_path : &str, output_path : &str, filter_list: Option<&[String]>) {
     let embeddings = TextEmbeddingSpace::parse_from_text(input_path);
     println!("Done reading!");
 
+    // Hacky
+    let mod_filter_list : Option<Vec<String>> = filter_list.map(|filter| {
+        let m = filter.iter().filter(|x| embeddings.embeddings.iter().any(|y| y.word.eq_ignore_ascii_case(&x))).cloned().collect();
+        m
+    });
+
+    let mod_filter_list_input : Option<&[String]> = mod_filter_list.as_ref().map(|x| &x[0..]);
+
     println!("Writing..");
-    embeddings.write_binary_to(output_path);
+    embeddings.write_binary_to(output_path, mod_filter_list_input);
 }
 
 struct MemmappedSpace
@@ -156,6 +178,29 @@ impl MemmappedSpace
         }
 
         None
+    }
+    
+    pub fn get_best(&self, target : &str, candidates : &[(String, usize)]) -> Vec<(String, usize, f32)>
+    {
+        let t_offset = self.find_offset_linear(target).unwrap();
+        let t_vect = self.get(t_offset);
+
+        let mut all = Vec::new();
+
+        for (word, woffset) in candidates {
+            if (t_offset == *woffset) {
+                continue;
+            }
+
+            let sim = similarity(self.get(*woffset), t_vect);
+            all.push((word.clone(), *woffset, sim));
+        }
+
+        all.sort_by(|(_, _, x), (_, _, y)| {
+            y.partial_cmp(x).unwrap()
+        });
+
+        all
     }
 }
 
@@ -246,39 +291,22 @@ fn load_wordlist(input_path : &str) -> Vec<String>
     words
 }
 
-fn get_best(space : &MemmappedSpace, target : &str, words : &[(String, usize)]) -> Vec<(String, usize, f32)>
-{
-    let t_offset = space.find_offset_linear(target).unwrap();
-    let t_vect = space.get(t_offset);
 
-    let mut all = Vec::new();
-
-    for (word, woffset) in words {
-        if (t_offset == *woffset) {
-            continue;
-        }
-
-        let sim = similarity(space.get(*woffset), t_vect);
-        all.push((word.clone(), *woffset, sim));
-    }
-
-    all.sort_by(|(_, _, x), (_, _, y)| {
-        y.partial_cmp(x).unwrap()
-    });
-
-    all
-}
 
 fn main() {
     let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
     let glove_200_path = r"C:\Users\Dan\glove\glove.twitter.27B.200d.txt";
     let glove_25_bin_path = r"C:\Users\Dan\vecrypto\glove_25.embspace";
     let glove_200_bin_path = r"C:\Users\Dan\vecrypto\glove_200.embspace";
+    let glove_filtered_bin_path = r"C:\Users\Dan\vecrypto\glove_filtered.embspace";
     let wordlist_path = r"C:\Users\Dan\vecrypto\wordlist.txt";
-    //let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
-    //transform_and_write(glove_200_path, glove_200_bin_path);
 
-    let space = MemmappedSpace::load(glove_200_bin_path);
+    //let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
+    //transform_and_write(glove_200_path, glove_200_bin_path, None);
+    //let words = load_wordlist(wordlist_path);
+    //transform_and_write(glove_200_path, glove_filtered_bin_path, Some(&words));
+
+    let space = MemmappedSpace::load(glove_filtered_bin_path);
     let words = load_wordlist(wordlist_path);
 
     let mut offsets = Vec::new();
@@ -291,14 +319,14 @@ fn main() {
         }
     }
 
-    let i = 131;
+    let i = 201;
     let (word, offset) = &offsets[i];
     let vec = space.get(*offset);
     let vec_norm = norm(vec);
 
     println!("Target word '{}' offset {}", word, offset);
 
-    let closest : Vec<_> = get_best(&space, word, &offsets).into_iter().take(5).collect();
+    let closest : Vec<_> = space.get_best(word, &offsets).into_iter().take(10).collect();
 
     for (a, b, c) in &closest {
         println!("{} {} {}", a, b, c);
