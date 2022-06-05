@@ -31,10 +31,11 @@ wasm-bindgen = "0.2.45"
 # compared to the default allocator's ~10K. However, it is slower than the default
 # allocator, so it's not enabled by default.
 wee_alloc = { version = "0.4.2", optional = true }
-serde = "1.0"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 console_error_panic_hook = "0.1.6"
-froggy-rand = "0.2"
+# froggy-rand = "0.2"
+froggy-rand = { path = "../../froggy_rng" }
 
 # The `web-sys` crate allows you to interact with the various browser APIs,
 # like the DOM.

@@ -1,18 +1,27 @@
 use froggy_rand::FroggyRand;
+use serde::Serialize;
 
 use crate::embedding_space::EmbeddingSpace;
 use crate::message::{Message, Deck};
+
+//#[derive(Debug)]
+//pub enum GameState {
+    //WaitingForGuess,
+    //Won,
+//}
 
 #[derive(Debug)]
 pub struct Game {
     hidden_words : [String;4],
     deck : Deck,
-    past_turns : Vec<Turn>,
+    pub past_turns : Vec<Turn>,
+    current_turn : Option<Turn>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Turn {
     message : Message,
+    player_guess : Option<Message>,
     clues : [String;3],
 }
 
@@ -39,7 +48,7 @@ impl Game {
         let rand = froggy_rand::FroggyRand::new(seed);
         let deck = Deck::new(&rand);
 
-        let hidden_word_ids_vec = pick_n_different(&FroggyRand::from_hash(("n_different", seed)), 0, embedding_space.size, 4);
+        let hidden_word_ids_vec = pick_n_different(&rand.subrand("n_different"), 0, embedding_space.size, 4);
         let hidden_words_vec : Vec<String> = hidden_word_ids_vec.iter().map(|x| embedding_space.get_word_from_id(*x).to_owned()).collect();
         let hidden_words = hidden_words_vec.try_into().unwrap();
 
@@ -47,10 +56,91 @@ impl Game {
             hidden_words,
             deck,
             past_turns : Default::default(),
+            current_turn : Default::default(),
         }
     }
 
-    pub fn next_turn(&mut self)
+    fn word_used(&self, s : &str) -> bool {
+        for hidden in &self.hidden_words {
+            if (s.eq_ignore_ascii_case(hidden)) {
+                return true;
+            }
+        }
+
+        for past in &self.past_turns {
+            for clue in &past.clues {
+                if (s.eq_ignore_ascii_case(clue)) {
+                    return true;
+                }
+            } 
+        }
+
+        if let Some(turn) = self.current_turn.as_ref() {
+            for clue in &turn.clues {
+                if (s.eq_ignore_ascii_case(clue)) {
+                    return true;
+                }
+            } 
+        }
+
+        return false;
+    }
+
+    fn get_clue(&self, rng : FroggyRand, id : u8, embedding_space : &EmbeddingSpace) -> String 
     {
+        let hidden_word = &self.hidden_words[id as usize];
+        log!("get_clue for hidden word '{}'", hidden_word);
+        let best = embedding_space.get_best(hidden_word);
+
+        let mut i = 0;
+        loop {
+            let chosen_id = rng.gen_froggy(("choose", i), 0., 3.2 + (i as f64), 5).floor() as usize;
+            i += 1;
+            if chosen_id > best.len()
+            {
+                continue;
+            }
+
+            let (chosen, _) = best[chosen_id];
+
+            log!("trying {}", chosen);
+
+            // TODO check against other hidden words.
+
+            if (!self.word_used(chosen))
+            {
+                log!("Chose {}", chosen);
+                return chosen.to_owned();
+            }
+        }
+    }
+
+    fn generate_turn(&mut self, rng : FroggyRand, embedding_space : &EmbeddingSpace) -> Option<Turn> {
+        log!("generate_turn()");
+        let message = self.deck.next()?;
+        let ordering = message.to_ordering();
+
+        let clues = ordering.iter().map(|id| {
+            self.get_clue(rng.subrand(*id), *id, embedding_space)
+        }).collect::<Vec<_>>().try_into().unwrap();
+
+        Some(Turn {
+            message,
+            player_guess : Default::default(),
+            clues,
+        })
+    }
+
+    pub fn next_turn(&mut self, rng : FroggyRand, guess : Message, embedding_space : &EmbeddingSpace)
+    {
+        log!("next_turn()");
+        let current_turn = self.past_turns.len();
+        let new_turn = self.generate_turn(rng.subrand(current_turn), embedding_space).unwrap();
+
+        if let Some(turn) = self.current_turn.take() {
+            self.past_turns.push(turn);
+        }
+
+        self.current_turn = Some(new_turn);
     }
 }

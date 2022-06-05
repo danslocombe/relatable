@@ -11,7 +11,7 @@ use serde::{Serialize, Serializer};
 // 
 // There are 24 valid messages and we form a bijection from [0..23] -> Valid Message Space
 // This way we can easily keep them as a single number and generate them randomly
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Message {
     id : u8,
 }

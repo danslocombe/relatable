@@ -50,7 +50,7 @@ impl EmbeddingSpace
         None
     }
     
-    pub fn get_best(&self, target : &str, candidates : &[(String, usize)]) -> Vec<(String, usize, f32)>
+    pub fn get_best_filtered(&self, target : &str, candidates : &[(String, usize)]) -> Vec<(String, usize, f32)>
     {
         let t_offset = self.find_offset_linear(target).unwrap();
         let t_vect = self.get(t_offset);
@@ -108,6 +108,44 @@ impl<'a> EmbeddingSpace
             i += 1;
         }
     }
+
+    pub fn get_best(&'a self, target : &str) -> Vec<(&'a str, f32)>
+    {
+        let target_vector = self.find_linear(target).unwrap();
+        let mut all = Vec::with_capacity(self.size);
+
+        let mut offset = HEADER_SIZE as usize;
+        for i in 0..self.size
+        {
+            let string_start = offset+4;
+            let size_bytes = (&self.bytes[offset..string_start]).try_into().unwrap();
+            let string_size = u32::from_le_bytes(size_bytes) as usize;
+
+            let string_bytes = &self.bytes[string_start..string_start+string_size];
+            let string = unsafe { std::str::from_utf8_unchecked(string_bytes) };
+
+            if (string.eq_ignore_ascii_case(target))
+            {
+                continue;
+            }
+
+            let byte_offset = string_start + string_size;
+            let bytes = &self.bytes[byte_offset..byte_offset + 4 * self.dimensions];
+            let vector = unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const f32, self.dimensions) };
+
+            let sim = similarity(target_vector, vector);
+
+            all.push((string, sim));
+
+            offset += (4 + string_size + 4 * self.dimensions);
+        }
+
+        all.sort_by(|(_, x), (_, y)| {
+            y.partial_cmp(x).unwrap()
+        });
+
+        all
+    }
 }
 
 fn norm(v: &[f32]) -> Vec<f32>
@@ -149,6 +187,7 @@ fn get_mag(v : &[f32]) -> f64
 
 fn similarity(u : &[f32], v : &[f32]) -> f32
 {
+    assert_eq!(u.len(), v.len());
     let mag_u = get_mag(u);
     let mag_v = get_mag(v);
     let k = 1.0 / (mag_u * mag_v);
