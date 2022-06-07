@@ -25,6 +25,9 @@ impl Message {
         }
     }
 
+    // Idea of conversion is first choice we have 4 numbers to pick from
+    // and each selection of first number leads to 6 possibilities.
+    // Then we have 3 numbers to pick from, then 2
     pub fn to_ordering(&self) -> [u8; 3] {
         let x = self.id / 6;
         let y0 = (self.id % 6) / 2;
@@ -45,6 +48,32 @@ impl Message {
         }
 
         [x, y, z]
+    }
+
+    pub fn from_ordering(ordering : [u8; 3]) -> Self {
+        let mut id = 0;
+        let x = ordering[0];
+        let y0 = ordering[1];
+        let z0 = ordering[2];
+        let mut y = y0;
+        let mut z = z0;
+
+        if y >= x {
+            y -= 1
+        }
+
+        if z >= y0 {
+            z -= 1;
+        }
+        if z >= x {
+            z -= 1;
+        }
+
+        id += 6 * x;
+        id += 2 * y;
+        id += z;
+
+        Self { id }
     }
 }
 
@@ -150,5 +179,19 @@ mod tests {
         } {}
 
         assert_eq!(all.len() as u8, MAX_ID+1);
+    }
+
+    #[test]
+    fn round_trip()
+    {
+        let rand = froggy_rand::FroggyRand::new(1);
+        let mut deck = Deck::new(&rand);
+
+        while {
+            let ordering = deck.cur().to_ordering();
+            let reconstructed = Message::from_ordering(ordering);
+            assert_eq!(reconstructed, *deck.cur());
+            deck.next().is_some()
+        } {}
     }
 }

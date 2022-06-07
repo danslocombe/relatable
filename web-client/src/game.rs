@@ -15,7 +15,7 @@ pub struct Game {
     hidden_words : [String;4],
     deck : Deck,
     pub past_turns : Vec<Turn>,
-    current_turn : Option<Turn>,
+    pub current_turn : Option<Turn>,
 }
 
 #[derive(Debug, Serialize)]
@@ -94,16 +94,16 @@ impl Game {
 
         let mut i = 0;
         loop {
-            let chosen_id = rng.gen_froggy(("choose", i), 0., 3.2 + (i as f64), 5).floor() as usize;
+            let chosen_id = rng.gen_froggy(("choose", i), 0., 6. + (i as f64), 2).floor() as usize;
             i += 1;
             if chosen_id > best.len()
             {
                 continue;
             }
 
-            let (chosen, _) = best[chosen_id];
+            let (chosen, sim) = best[chosen_id];
 
-            log!("trying {}", chosen);
+            log!("trying {}, id={} sim={}", chosen, chosen_id, sim);
 
             // TODO check against other hidden words.
 
@@ -131,16 +131,29 @@ impl Game {
         })
     }
 
-    pub fn next_turn(&mut self, rng : FroggyRand, guess : Message, embedding_space : &EmbeddingSpace)
+    pub fn next_turn(&mut self, rng : FroggyRand, guess : Option<Message>, embedding_space : &EmbeddingSpace)
     {
         log!("next_turn()");
         let current_turn = self.past_turns.len();
         let new_turn = self.generate_turn(rng.subrand(current_turn), embedding_space).unwrap();
 
-        if let Some(turn) = self.current_turn.take() {
+        if let Some(mut turn) = self.current_turn.take() {
+            turn.player_guess = guess;
             self.past_turns.push(turn);
         }
 
         self.current_turn = Some(new_turn);
+    }
+
+    pub fn correct_guess_count(&self) -> u32
+    {
+        let mut count = 0;
+        for turn in &self.past_turns  {
+            if turn.player_guess == Some(turn.message) {
+                count += 1;
+            }
+        }
+
+        count
     }
 }

@@ -11,7 +11,6 @@ mod message;
 mod game;
 
 use wasm_bindgen::prelude::*;
-use serde::Deserialize;
 
 #[wasm_bindgen]
 pub fn init_panic_hook() {
@@ -45,17 +44,36 @@ impl Client {
         self.game = Some(game);
     }
 
-    pub fn next_turn(&mut self)
+    pub fn next_turn(&mut self, guess_0 : i32, guess_1 : i32, guess_2 : i32)
     {
-        let guess = Default::default();
+        let guess = message::Message::from_ordering([guess_0 as u8, guess_1 as u8, guess_2 as u8]);
+        log!("Generated guess message {:?} from {} {} {}", guess, guess_0, guess_1, guess_2);
         self.game.as_mut().unwrap().next_turn(
-            froggy_rand::FroggyRand::new(self.seed), guess, &self.embedding_space);
+            froggy_rand::FroggyRand::new(self.seed), Some(guess), &self.embedding_space);
 
         log!("{:?}", self.game.as_ref().unwrap());
+    }
+
+    pub fn next_turn_noguess(&mut self)
+    {
+        //let g = message::Message::
+        self.game.as_mut().unwrap().next_turn(
+            froggy_rand::FroggyRand::new(self.seed), None, &self.embedding_space);
+
+        log!("{:?}", self.game.as_ref().unwrap());
+    }
+
+    pub fn get_current_turn_json(&self) -> String {
+        let current_turn = self.game.as_ref().unwrap().current_turn.as_ref().unwrap();
+        serde_json::to_string(current_turn).unwrap()
     }
 
     pub fn get_past_turns_json(&self) -> String {
         let past_turns = &self.game.as_ref().unwrap().past_turns;
         serde_json::to_string(past_turns).unwrap()
+    }
+
+    pub fn correct_guess_count(&self) -> u32 {
+        self.game.as_ref().unwrap().correct_guess_count()
     }
 }
