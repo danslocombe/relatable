@@ -128,7 +128,7 @@ function next_turn(use_guess_input)
     }
 }
 
-fetch('/glove_filtered.embspace')
+fetch('glove_filtered.embspace')
     .then(response => response.blob())
     .then(emb_space_blob => emb_space_blob.arrayBuffer())
     .then(emb_space_arraybuffer => {
