@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Vecrypto (testing)</title>
+    <link rel="stylesheet" href="simple-css-min.css">
+  </head>
+  <body>
+    <div id="align">
+      <h1>Vecrypto (testing)</h1>
+      <div>
+      <details>
+        <summary>How to play</summary>
+        <p>
+          <!-- <pre> -->
+Vecrypto is a game about decoding and intercepting the message sent by two AI players.
+        <br />
+        <br />
+
+Alice and Bob are robots trying to communicate hidden information.
+        <br />
+Alice will send a message to Bob encoding a sequence of three numbers.
+        <br />
+They both have the same four secret words that they are using as a key.
+        <br />
+Alice will generate a message of three new words that allude to three of the secret words.
+        <br />
+Bob can then interpret the sequence by which of the secret words the message corresponds to.
+        <br />
+        <br />
+
+You can see the encoded message and the orders that are used after the fact.
+        <br />
+You need to work to decode the message before Bob can.
+        <br />
+          <!-- </pre> -->
+        </p>
+        </details>
+      </div>
+      <hr />
+      <div id="turns">
+        <table id="turn_table">
+          <tbody id="turn_table_body">
+            <!--
+            <tr>
+              <td></td>
+              <td><b>word0</b></td>
+              <td><b>word1</b></td>
+              <td><b>word2</b></td>
+            </tr>
+            <tr>
+              <td>Guess</td>
+              <td>
+                <input type="text" inputmode="numeric" pattern="[1-4]">
+              </td>
+              <td>
+                <input type="text" inputmode="numeric" pattern="[1-4]">
+              </td>
+              <td>
+                <input type="text" inputmode="numeric" pattern="[1-4]">
+              </td>
+            </tr>
+            -->
+          </tbody>
+        </table>
+        <button id="submit">Submit</button>
+        <div id="correct_guess_count"></div>
+        <table id="secret_words">
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <script src="index.js"></script>
+  </body>
+</html>
