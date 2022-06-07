@@ -76,4 +76,9 @@ impl Client {
     pub fn correct_guess_count(&self) -> u32 {
         self.game.as_ref().unwrap().correct_guess_count()
     }
+
+    pub fn get_secret_words(&self) -> String {
+        let hidden = &self.game.as_ref().unwrap().hidden_words;
+        serde_json::to_string(hidden).unwrap()
+    }
 }

@@ -12,8 +12,8 @@ use crate::message::{Message, Deck};
 
 #[derive(Debug)]
 pub struct Game {
-    hidden_words : [String;4],
-    deck : Deck,
+    pub hidden_words : [String;4],
+    pub deck : Deck,
     pub past_turns : Vec<Turn>,
     pub current_turn : Option<Turn>,
 }

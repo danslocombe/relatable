@@ -111,6 +111,17 @@ function next_turn(use_guess_input)
     if (correct_guess_count == 2)
     {
         document.getElementById("correct_guess_count").innerHTML = "You won in " + turns.length + " turns!";
+        const secret_table = document.getElementById("secret_words");
+        const row = secret_table.insertRow(-1);
+        const secret_words = JSON.parse(client.get_secret_words());
+        const cell_descr = row.insertCell(-1);
+        cell_descr.innerHTML = "Secret words: ";
+        const cell_0 = row.insertCell(-1);
+        cell_0.innerHTML = secret_words[0];
+        const cell_1 = row.insertCell(-1);
+        cell_1.innerHTML = secret_words[1];
+        const cell_2 = row.insertCell(-1);
+        cell_2.innerHTML = secret_words[2];
     }
     else
     {
