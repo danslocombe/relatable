@@ -90,7 +90,8 @@ impl Game {
     {
         let hidden_word = &self.hidden_words[id as usize];
         log!("get_clue for hidden word '{}'", hidden_word);
-        let best = embedding_space.get_best(hidden_word);
+        //let best = embedding_space.get_best(hidden_word);
+        let best = embedding_space.get_best_avoiding_others(id as usize, &self.hidden_words[0..]);
 
         let mut i = 0;
         loop {

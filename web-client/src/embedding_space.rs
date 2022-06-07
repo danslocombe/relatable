@@ -1,3 +1,5 @@
+use std::vec;
+
 const MAGIC:[u8;4] = [0x11, 0x22, 0x33, 0x44];
 const HEADER_SIZE : u64 = 20;
 
@@ -136,6 +138,60 @@ impl<'a> EmbeddingSpace
             let sim = similarity(target_vector, vector);
 
             all.push((string, sim));
+
+            offset += (4 + string_size + 4 * self.dimensions);
+        }
+
+        all.sort_by(|(_, x), (_, y)| {
+            y.partial_cmp(x).unwrap()
+        });
+
+        all
+    }
+
+    pub fn get_best_avoiding_others(&'a self, target_word_id : usize, words : &[String]) -> Vec<(&'a str, f32)>
+    {
+        let target = &words[target_word_id];
+        let target_vector = self.find_linear(target).unwrap();
+
+        let mut avoid_vectors = Vec::new();
+        for (i, word) in words.iter().enumerate() {
+            if (i != target_word_id) {
+                let v = self.find_linear(word).unwrap();
+                avoid_vectors.push(v);
+            }
+        }
+
+        let mut all = Vec::with_capacity(self.size);
+
+        let mut offset = HEADER_SIZE as usize;
+        for i in 0..self.size
+        {
+            let string_start = offset+4;
+            let size_bytes = (&self.bytes[offset..string_start]).try_into().unwrap();
+            let string_size = u32::from_le_bytes(size_bytes) as usize;
+
+            let string_bytes = &self.bytes[string_start..string_start+string_size];
+            let string = unsafe { std::str::from_utf8_unchecked(string_bytes) };
+
+            if (string.eq_ignore_ascii_case(&target))
+            {
+                continue;
+            }
+
+            let byte_offset = string_start + string_size;
+            let bytes = &self.bytes[byte_offset..byte_offset + 4 * self.dimensions];
+            let vector = unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const f32, self.dimensions) };
+
+            let mut score = 0.;
+
+            score += (avoid_vectors.len() + 3) as f32 * similarity(target_vector, vector);
+
+            for avoid in &avoid_vectors {
+                score -= similarity(avoid, vector);
+            }
+
+            all.push((string, score));
 
             offset += (4 + string_size + 4 * self.dimensions);
         }
