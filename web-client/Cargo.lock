@@ -45,6 +45,8 @@ checksum = "51a9f34e639edf43f709706fc3016ccc7ce5a819d339fd23665e4385af8e93f0"
 [[package]]
 name = "froggy-rand"
 version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35a079ae6bd77197c45b9d62e1ca8cbbc072adb11bbabf3a623d6cfe67803283"
 dependencies = [
  "deterministic-hash",
  "hashers",
