@@ -116,12 +116,11 @@ function next_turn(use_guess_input)
         const secret_words = JSON.parse(client.get_secret_words());
         const cell_descr = row.insertCell(-1);
         cell_descr.innerHTML = "Secret words: ";
-        const cell_0 = row.insertCell(-1);
-        cell_0.innerHTML = secret_words[0];
-        const cell_1 = row.insertCell(-1);
-        cell_1.innerHTML = secret_words[1];
-        const cell_2 = row.insertCell(-1);
-        cell_2.innerHTML = secret_words[2];
+        for (let word of secret_words)
+        {
+            const cell = row.insertCell(-1);
+            cell.innerHTML = word;
+        }
     }
     else
     {
