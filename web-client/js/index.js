@@ -12,6 +12,8 @@ if (url_params.has("seed"))
 
 var client = undefined;
 
+var cols = ["#FFDDDD", "#FFFFCF", "#D9FFDF", "#D9FFFF"];
+
 function add_turn(table_body, turn, current_turn)
 {
     console.log(turn);
@@ -37,6 +39,7 @@ function add_turn(table_body, turn, current_turn)
         else
         {
             new_cell.innerHTML = id_s.toString();
+            new_cell.style.backgroundColor = cols[id_s];
         }
     }
 
@@ -160,6 +163,7 @@ function trim_input(s) {
 function make_input_keypress(dom_obj)
 {
     return () => {
+        // todo ensure inputs are different
         let cur_input = dom_obj.value;
         dom_obj.value = trim_input(cur_input);
     }
