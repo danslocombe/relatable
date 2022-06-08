@@ -63,6 +63,8 @@ function add_turn(table_body, turn, current_turn)
         {
             const new_cell = input_row.insertCell(-1);
             new_cell.innerHTML = '<input type="text" id="input_' + i.toString() + '" inputmode="numeric" pattern="[1-4]"></input>';
+            let input = document.getElementById("input_" + i.toString());
+            input.addEventListener("input", make_input_keypress(input))
         }
     }
 }
@@ -125,6 +127,41 @@ function next_turn(use_guess_input)
     else
     {
         document.getElementById("correct_guess_count").innerHTML = "Correct Guesses " + correct_guess_count.toString() + "/2";
+    }
+}
+
+function input_valid(s)
+{
+    if (s.length > 1) {
+        return false;
+    }
+
+    if (s.length == 1) {
+        return s[0] >= '0' && s[0] <= '2';
+    }
+
+    return true;
+}
+
+function trim_input(s) {
+    if (s.length > 1) {
+        s = s.substr(0, 1);
+    }
+
+    if (s.length == 1) {
+        if (s[0] < '0' || s[0] > '2') {
+            return "";
+        }
+    }
+
+    return s;
+}
+
+function make_input_keypress(dom_obj)
+{
+    return () => {
+        let cur_input = dom_obj.value;
+        dom_obj.value = trim_input(cur_input);
     }
 }
 
