@@ -12,13 +12,25 @@ if (url_params.has("seed"))
 
 var client = undefined;
 
-var cols = ["#FCDDFF", "#FFFFCF", "#D9FFDF", "#D9FFFF"];
+var hidden_word_colours = ["#FCDDFF", "#FFFFCF", "#D9FFDF", "#D9FFFF"];
+//var hidden_word_colours = ["#FCDDFF", "#FFFFCF", "#FFD9E8", "#D9FFFF"];
+//var colour_correct = "#D9FFDF";
+//var colour_incorrect = "white";
 
 function add_turn(table_body, turn, current_turn)
 {
+    if (table_body.children.length > 0) {
+        const blank_row = table_body.insertRow(-1);
+        for (let i = 0; i < 4; i++)
+        {
+            const blank_cell = blank_row.insertCell(-1);
+        }
+    }
+
     console.log(turn);
     const clues_row = table_body.insertRow(-1);
-    clues_row.insertCell(-1);
+    const new_cell_clues = clues_row.insertCell(-1);
+    new_cell_clues.innerHTML = "Message";
     for (let clue of turn.clues)
     {
         const new_cell = clues_row.insertCell(-1);
@@ -26,8 +38,8 @@ function add_turn(table_body, turn, current_turn)
     }
 
     const order_row = turn_table_body.insertRow(-1);
-    const new_cell = order_row.insertCell(-1);
-    new_cell.innerHTML = "Secret";
+    const new_cell_message = order_row.insertCell(-1);
+    new_cell_message.innerHTML = "Decoded";
 
     for (let id_s of turn.message)
     {
@@ -39,7 +51,7 @@ function add_turn(table_body, turn, current_turn)
         else
         {
             new_cell.innerHTML = id_s.toString();
-            new_cell.style.backgroundColor = cols[id_s];
+            new_cell.style.backgroundColor = hidden_word_colours[id_s];
         }
     }
 
@@ -49,10 +61,19 @@ function add_turn(table_body, turn, current_turn)
         const new_cell = player_guess_row.insertCell(-1);
         new_cell.innerHTML = "Guess";
 
-        for (let id_s of turn.player_guess)
+        for (let i = 0; i < turn.player_guess.length; i++)
         {
+            let guess_id = turn.player_guess[i];
+            var correct_id = turn.message[i];
             const new_cell = player_guess_row.insertCell(-1);
-            new_cell.innerHTML = id_s.toString();
+            var str = guess_id.toString();
+
+            if (guess_id === correct_id) {
+                new_cell.style.color = "green";
+                str += " (Correct)";
+            }
+
+            new_cell.innerHTML = str;
         }
     }
 
@@ -137,7 +158,7 @@ function next_turn(use_guess_input)
     }
     else
     {
-        document.getElementById("correct_guess_count").innerHTML = "Correct Guesses " + correct_guess_count.toString() + "/2";
+        document.getElementById("correct_guess_count").innerHTML = "Correctly decoded sequences: " + correct_guess_count.toString() + "/2";
     }
 }
 

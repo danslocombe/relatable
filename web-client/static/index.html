@@ -2,39 +2,55 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Vecrypto (testing)</title>
+    <title>Vecrypto</title>
     <link rel="stylesheet" href="simple-css-min.css">
   </head>
   <body>
     <div id="align">
-      <h1>Vecrypto (testing)</h1>
+      <h1>Vecrypto</h1>
       <div>
       <details>
         <summary>How to play</summary>
         <p>
           <!-- <pre> -->
-Vecrypto is a game about decoding and intercepting the message sent by two AI players.
+Vecrypto is a game about decoding and intercepting the message sent between two AI players. It is a single player variant of the greatest board game of all time <a href="https://boardgamegeek.com/boardgame/225694/decrypto" target="_blank">Decrypto</a>.
         <br />
         <br />
 
 Alice and Bob are robots trying to communicate hidden information.
         <br />
-Alice will send a message to Bob encoding a sequence of three numbers.
+Alice wants to send a message to Bob containing a sequence of three numbers without it being intercepted.
         <br />
 They both have the same four secret words that they are using as a key.
         <br />
-Alice will generate a message of three new words that allude to three of the secret words.
+Alice will generate a message of three new words that each allude to one of the secret words.
         <br />
-Bob can then interpret the sequence by which of the secret words the message corresponds to.
+Bob can then decode the sequence by looking at each word in the message and comparing it to the secret words.
         <br />
         <br />
+It's your job to intercept the message and try to decode it before Bob can.
+        <br />
+You can see the history of sent messages and the decoded sequence.
+        <br />
+You should use this to try and guess at the hidden words to crack two sent messages to win.
 
-You can see the encoded message and the orders that are used after the fact.
-        <br />
-You need to work to decode the message before Bob can.
         <br />
           <!-- </pre> -->
         </p>
+        </details>
+        <details>
+          <summary>Explanation</summary>
+          Vecrypto works by using <a href="https://en.wikipedia.org/wiki/Word_embedding" target="_blank">word vector embeddings</a>.
+          <br />
+          <br />
+          Embeddings map words to a position in a vector space where "similar" words are mapped "close" positions in the space.
+          <br />
+          For example "desk" and "chair" may be mapped to close vectors but "desk" and "campfire" would be mapped to very far positions.
+          <br />
+          Using such an embedding the AI player can find words that are similar to the hidden words to set as clues.
+          <br />
+          <br />
+          Currently clues are built from <a href="https://nlp.stanford.edu/projects/glove/" target="_blank">GloVe embeddings</a>.
         </details>
       </div>
       <hr />
@@ -70,6 +86,10 @@ You need to work to decode the message before Bob can.
         </table>
       </div>
     </div>
+    <footer>
+      Dan Slocombe 2022 - 
+      <a href="https://github.com/danslocombe/vecrypto" target="_blank">Source code</a>
+    </footer>
     <script src="index.js"></script>
   </body>
 </html>
