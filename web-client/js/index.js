@@ -12,7 +12,7 @@ if (url_params.has("seed"))
 
 var client = undefined;
 
-var cols = ["#FFDDDD", "#FFFFCF", "#D9FFDF", "#D9FFFF"];
+var cols = ["#FCDDFF", "#FFFFCF", "#D9FFDF", "#D9FFFF"];
 
 function add_turn(table_body, turn, current_turn)
 {
@@ -62,12 +62,20 @@ function add_turn(table_body, turn, current_turn)
         const new_cell = input_row.insertCell(-1);
         new_cell.innerHTML = "Guess";
 
+        let input_objs = []
+
         for (let i = 0; i < 3; i++)
         {
             const new_cell = input_row.insertCell(-1);
             new_cell.innerHTML = '<input type="text" id="input_' + i.toString() + '" inputmode="numeric" pattern="[1-4]"></input>';
             let input = document.getElementById("input_" + i.toString());
-            input.addEventListener("input", make_input_keypress(input))
+            input_objs.push(input);
+        }
+
+        for (let i = 0 ; i < 3; i++)
+        {
+            input_objs[i].addEventListener("input", make_input_keypress(i,input_objs));
+            input_objs[i].addEventListener("keypress", on_keypress);
         }
     }
 }
@@ -133,14 +141,25 @@ function next_turn(use_guess_input)
     }
 }
 
-function input_valid(s)
+function input_valid(current_id, inputs)
 {
-    if (s.length > 1) {
+    let current = inputs[current_id];
+    if (current.length > 1) {
         return false;
     }
 
-    if (s.length == 1) {
-        return s[0] >= '0' && s[0] <= '2';
+    if (current.length == 1) {
+        if (current[0] < '0' && current[0] > '3') {
+            return false;
+        }
+
+        for (let i = 0; i < inputs.length; i++) 
+        {
+            // Overlap
+            if (i != current_id && current === inputs[i]) {
+                return false;
+            }
+        }
     }
 
     return true;
@@ -152,7 +171,7 @@ function trim_input(s) {
     }
 
     if (s.length == 1) {
-        if (s[0] < '0' || s[0] > '2') {
+        if (s[0] < '0' || s[0] > '3') {
             return "";
         }
     }
@@ -160,13 +179,44 @@ function trim_input(s) {
     return s;
 }
 
-function make_input_keypress(dom_obj)
+function make_input_keypress(current, dom_objs)
 {
     return () => {
+        let dom_obj = dom_objs[current];
         // todo ensure inputs are different
         let cur_input = dom_obj.value;
         dom_obj.value = trim_input(cur_input);
+
+        let inputs = dom_objs.map((x) => x.value);
+        if (!input_valid(current, inputs)) {
+            dom_obj.style.backgroundColor = "#FCBAB1";
+        }
+        else {
+            dom_obj.style.backgroundColor = "";
+        }
     }
+}
+
+function on_keypress(event) {
+    if (event.keyCode == 13)
+    {
+        try_next_turn_with_input();
+    }
+}
+
+function try_next_turn_with_input()
+{
+    let input_dom_objs = [0, 1, 2].map(x => document.getElementById("input_" + x.toString()));
+    let inputs = input_dom_objs.map((x) => x.value);
+
+    for (let i = 0; i < inputs.length; i++) {
+        if (inputs[i].length == 0 || !input_valid(i, inputs)) {
+            return false;
+        }
+    }
+
+    next_turn(true);
+    return true;
 }
 
 fetch('glove_filtered.embspace')
@@ -180,11 +230,8 @@ fetch('glove_filtered.embspace')
         client.next_turn_noguess();
         client.next_turn_noguess();
         next_turn(false);
-        //client.next_turn();
-        //console.log(JSON.parse(client.get_past_turns_json()));
 
         document.getElementById("submit").addEventListener("click", () => {
-            console.log("click");
-            next_turn(true);
+            try_next_turn_with_input();
         })
     });
