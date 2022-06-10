@@ -52,6 +52,7 @@ function add_turn(table_body, turn, current_turn)
         {
             new_cell.innerHTML = id_s.toString();
             new_cell.style.backgroundColor = hidden_word_colours[id_s];
+            new_cell.style.color = "black";
         }
     }
 
