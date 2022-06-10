@@ -71,7 +71,8 @@ function add_turn(table_body, turn, current_turn)
             var str = guess_id.toString();
 
             if (guess_id === correct_id) {
-                new_cell.style.color = "green";
+                new_cell.style.backgroundColor = hidden_word_colours[correct_id];
+                new_cell.style.color = "black";
                 str += " (Correct)";
             }
 
@@ -212,6 +213,7 @@ function make_input_keypress(current, dom_objs)
         let inputs = dom_objs.map((x) => x.value);
         if (!input_valid(current, inputs)) {
             dom_obj.style.backgroundColor = "#FCBAB1";
+            dom_obj.style.color = "black";
         }
         else {
             dom_obj.style.backgroundColor = "";
@@ -241,8 +243,12 @@ function try_next_turn_with_input()
     return true;
 }
 
-//fetch('glove_filtered.embspace')
-fetch('fasttext_filtered.embspace')
+//const embedding_name = "glove_filtered.embspace";
+const embedding_name = "fasttext_filtered.embspace";
+
+console.log("Fetching embedding " + embedding_name);
+
+fetch(embedding_name)
     .then(response => response.blob())
     .then(emb_space_blob => emb_space_blob.arrayBuffer())
     .then(emb_space_arraybuffer => {
