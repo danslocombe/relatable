@@ -30,6 +30,13 @@ impl TextEmbeddingSpace {
         while let Ok(size) = reader.read_line(&mut line)
         {
             i+= 1;
+
+            if (i == 1) {
+                // Skip first line
+                line.clear();
+                continue;
+            }
+
             let mut splits = line.split_ascii_whitespace();
 
             if let Some(word) = splits.next()
@@ -76,6 +83,8 @@ impl TextEmbeddingSpace {
         let out_file = File::create(path).unwrap();
         let mut buf_writer = std::io::BufWriter::new(out_file);
 
+        let mut casing_hashset = case_insensitive_hashmap::CaseInsensitiveHashMap::new();
+
         println!("Writing headers..");
         buf_writer.write(&MAGIC).unwrap();
         let count = filter_list.map(|x| x.len()).unwrap_or(self.embeddings.len());
@@ -92,6 +101,12 @@ impl TextEmbeddingSpace {
                      // Not in filter list, skip
                     continue;
                 }
+
+                if (casing_hashset.contains_key(embedding.word.clone())) {
+                    continue;
+                }
+
+                casing_hashset.insert(embedding.word.clone(), ());
             }
 
             if (i % 10000 == 0)
@@ -218,6 +233,17 @@ impl<'a> MemmappedSpace
     }
 }
 
+fn sub(u : &[f32], v: &[f32]) -> Vec<f32>
+{
+    let mut subbed = Vec::with_capacity(v.len());
+    for i in 0..u.len()
+    {
+        subbed.push(u[i] - v[i]);
+    }
+
+    subbed
+}
+
 fn norm(v: &[f32]) -> Vec<f32>
 {
     let mag = get_mag(v);
@@ -292,19 +318,23 @@ fn load_wordlist(input_path : &str) -> Vec<String>
 }
 
 fn main() {
-    let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
-    let glove_200_path = r"C:\Users\Dan\glove\glove.twitter.27B.200d.txt";
-    let glove_25_bin_path = r"C:\Users\Dan\vecrypto\glove_25.embspace";
-    let glove_200_bin_path = r"C:\Users\Dan\vecrypto\glove_200.embspace";
-    let glove_filtered_bin_path = r"C:\Users\Dan\vecrypto\glove_filtered.embspace";
-    let wordlist_path = r"C:\Users\Dan\vecrypto\wordlist.txt";
+    let glove_25_path = r"C:\Users\Dan\glove\Gen\glove.twitter.27B.25d.txt";
+    let glove_200_path = r"C:\Users\Dan\glove\Gen\glove.twitter.27B.200d.txt";
+    let glove_25_bin_path = r"C:\Users\Dan\vecrypto\Gen\glove_25.embspace";
+    let glove_200_bin_path = r"C:\Users\Dan\vecrypto\Gen\glove_200.embspace";
+    let glove_filtered_bin_path = r"C:\Users\Dan\vecrypto\Gen\glove_filtered.embspace";
+    let wordlist_path = r"C:\Users\Dan\vecrypto\Gen\wordlist.txt";
+
+    let fasttext_path = r"C:\Users\Dan\fasttext\crawl-300d-2M.vec";
+    let fasttext_filtered_bin_path = r"C:\Users\Dan\vecrypto\Gen\fasttext_filtered.embspace";
 
     //let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
     //transform_and_write(glove_200_path, glove_200_bin_path, None);
-    //let words = load_wordlist(wordlist_path);
-    //transform_and_write(glove_200_path, glove_filtered_bin_path, Some(&words));
 
-    let space = MemmappedSpace::load(glove_filtered_bin_path);
+    //let words = load_wordlist(wordlist_path);
+    //transform_and_write(fasttext_path, fasttext_filtered_bin_path, Some(&words));
+
+    let space = MemmappedSpace::load(fasttext_filtered_bin_path);
     let words = load_wordlist(wordlist_path);
 
     let mut offsets = Vec::new();
@@ -341,13 +371,39 @@ fn main() {
         println!("{} similarity {}", input_word, sim);
     }
 
-    //let hot = space.find_linear("hot").unwrap();
-    //let hot_unit = norm(hot);
-    //let cold = space.find_linear("train").unwrap();
-    //let cold_unit = norm(cold);
+    /*
+    let space = MemmappedSpace::load(glove_200_bin_path);
+
+    let hot = space.find_linear("hot").unwrap();
+    let hot_unit = norm(hot);
+    let cold = space.find_linear("cold").unwrap();
+    let cold_unit = norm(cold);
+
+    let axis = sub(hot, cold);
+    let axis_norm = norm(&axis);
 
     //let sim = dot(&hot_unit, &cold_unit);
 
     //println!("hot cold similarity - {}", sim);
+    loop {
+        let mut buffer = String::new();
+        std::io::stdin().read_line(&mut buffer).unwrap();
+        let input_word = buffer.trim().to_lowercase();
+        let input_vec = space.find_linear(&input_word).unwrap();
+
+        let input_minus_cold = sub(input_vec, cold);
+        let input_minus_cold_norm = norm(&input_minus_cold);
+
+        let score_a = dot(&input_minus_cold, &axis) as f64 / get_mag(&axis);
+        let score_sim = dot(&axis_norm, &input_minus_cold_norm);
+
+        println!("{} - Score A {} Score sim {}", input_word, score_a, score_sim);
+
+        //let input_vec_norm = norm(input_vec);
+        //let sim = dot(&vec_norm, &input_vec_norm);
+
+        //println!("{} similarity {}", input_word, sim);
+    }
+    */
 
 }
