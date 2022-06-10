@@ -16,6 +16,7 @@ pub struct Game {
     pub deck : Deck,
     pub past_turns : Vec<Turn>,
     pub current_turn : Option<Turn>,
+    rng : froggy_rand::FroggyRand,
 }
 
 #[derive(Debug, Serialize)]
@@ -44,11 +45,11 @@ fn pick_n_different(rand : &FroggyRand, min : usize, max : usize, n : usize) -> 
 }
 
 impl Game {
-    pub fn new(seed : u64, embedding_space : &EmbeddingSpace) -> Self {
-        let rand = froggy_rand::FroggyRand::new(seed);
-        let deck = Deck::new(&rand);
+    pub fn new(seed : &str, embedding_space : &EmbeddingSpace) -> Self {
+        let rng = froggy_rand::FroggyRand::new(0).subrand(seed);
+        let deck = Deck::new(&rng);
 
-        let hidden_word_ids_vec = pick_n_different(&rand.subrand("n_different"), 0, embedding_space.size, 4);
+        let hidden_word_ids_vec = pick_n_different(&rng.subrand("n_different"), 0, embedding_space.size, 4);
         let hidden_words_vec : Vec<String> = hidden_word_ids_vec.iter().map(|x| embedding_space.get_word_from_id(*x).to_owned()).collect();
         let hidden_words = hidden_words_vec.try_into().unwrap();
 
@@ -57,6 +58,7 @@ impl Game {
             deck,
             past_turns : Default::default(),
             current_turn : Default::default(),
+            rng,
         }
     }
 
@@ -132,11 +134,11 @@ impl Game {
         })
     }
 
-    pub fn next_turn(&mut self, rng : FroggyRand, guess : Option<Message>, embedding_space : &EmbeddingSpace)
+    pub fn next_turn(&mut self, guess : Option<Message>, embedding_space : &EmbeddingSpace)
     {
         log!("next_turn()");
         let current_turn = self.past_turns.len();
-        let new_turn = self.generate_turn(rng.subrand(current_turn), embedding_space).unwrap();
+        let new_turn = self.generate_turn(self.rng.subrand(current_turn), embedding_space).unwrap();
 
         if let Some(mut turn) = self.current_turn.take() {
             turn.player_guess = guess;

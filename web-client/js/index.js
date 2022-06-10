@@ -4,7 +4,7 @@ import { Client } from "../pkg/index.js"
 const query_string = window.location.search;
 let url_params = new URLSearchParams(query_string);
 
-var game_seed = 101;
+var game_seed = new Date().toISOString().slice(0, 10);
 if (url_params.has("seed"))
 {
     game_seed = parseInt(url_params.get("seed"));

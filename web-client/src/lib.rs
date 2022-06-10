@@ -21,7 +21,6 @@ pub fn init_panic_hook() {
 pub struct Client {
     embedding_space : embedding_space::EmbeddingSpace,
     game : Option<game::Game>,
-    seed : u64,
 }
 
 #[wasm_bindgen]
@@ -32,14 +31,12 @@ impl Client {
         Self {
             embedding_space : embedding_space::EmbeddingSpace::load(emb_space_binary),
             game : Default::default(),
-            seed : 0,
         }
     }
 
-    pub fn new_game(&mut self, seed : u32)
+    pub fn new_game(&mut self, seed : &str)
     {
-        self.seed = seed as u64;
-        let game = game::Game::new(seed as u64, &self.embedding_space);
+        let game = game::Game::new(seed, &self.embedding_space);
         log!("{:?}", game);
         self.game = Some(game);
     }
@@ -48,8 +45,7 @@ impl Client {
     {
         let guess = message::Message::from_ordering([guess_0 as u8, guess_1 as u8, guess_2 as u8]);
         log!("Generated guess message {:?} from {} {} {}", guess, guess_0, guess_1, guess_2);
-        self.game.as_mut().unwrap().next_turn(
-            froggy_rand::FroggyRand::new(self.seed), Some(guess), &self.embedding_space);
+        self.game.as_mut().unwrap().next_turn(Some(guess), &self.embedding_space);
 
         log!("{:?}", self.game.as_ref().unwrap());
     }
@@ -57,8 +53,7 @@ impl Client {
     pub fn next_turn_noguess(&mut self)
     {
         //let g = message::Message::
-        self.game.as_mut().unwrap().next_turn(
-            froggy_rand::FroggyRand::new(self.seed), None, &self.embedding_space);
+        self.game.as_mut().unwrap().next_turn(None, &self.embedding_space);
 
         log!("{:?}", self.game.as_ref().unwrap());
     }
