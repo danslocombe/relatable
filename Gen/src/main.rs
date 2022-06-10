@@ -83,6 +83,8 @@ impl TextEmbeddingSpace {
         let out_file = File::create(path).unwrap();
         let mut buf_writer = std::io::BufWriter::new(out_file);
 
+        let mut casing_hashset = case_insensitive_hashmap::CaseInsensitiveHashMap::new();
+
         println!("Writing headers..");
         buf_writer.write(&MAGIC).unwrap();
         let count = filter_list.map(|x| x.len()).unwrap_or(self.embeddings.len());
@@ -99,6 +101,12 @@ impl TextEmbeddingSpace {
                      // Not in filter list, skip
                     continue;
                 }
+
+                if (casing_hashset.contains_key(embedding.word.clone())) {
+                    continue;
+                }
+
+                casing_hashset.insert(embedding.word.clone(), ());
             }
 
             if (i % 10000 == 0)
@@ -322,11 +330,11 @@ fn main() {
 
     //let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
     //transform_and_write(glove_200_path, glove_200_bin_path, None);
-    let words = load_wordlist(wordlist_path);
-    transform_and_write(fasttext_path, fasttext_filtered_bin_path, Some(&words));
 
-    /*
-    let space = MemmappedSpace::load(glove_filtered_bin_path);
+    //let words = load_wordlist(wordlist_path);
+    //transform_and_write(fasttext_path, fasttext_filtered_bin_path, Some(&words));
+
+    let space = MemmappedSpace::load(fasttext_filtered_bin_path);
     let words = load_wordlist(wordlist_path);
 
     let mut offsets = Vec::new();
@@ -343,9 +351,7 @@ fn main() {
     let (word, offset) = &offsets[i];
     let vec = space.get(*offset);
     let vec_norm = norm(vec);
-    */
 
-    /*
     println!("Target word '{}' offset {}", word, offset);
 
     let closest : Vec<_> = space.get_best(word, &offsets).into_iter().take(10).collect();
@@ -364,7 +370,6 @@ fn main() {
 
         println!("{} similarity {}", input_word, sim);
     }
-    */
 
     /*
     let space = MemmappedSpace::load(glove_200_bin_path);

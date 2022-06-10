@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 memmap = "0.7"
+unicase = "2.6.0"
+case_insensitive_hashmap = "1.0.0"
