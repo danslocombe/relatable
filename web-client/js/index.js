@@ -91,14 +91,14 @@ function add_turn(table_body, turn, current_turn)
         for (let i = 0; i < 3; i++)
         {
             const new_cell = input_row.insertCell(-1);
-            new_cell.innerHTML = '<input type="text" id="input_' + i.toString() + '" inputmode="numeric" pattern="[1-4]"></input>';
+            new_cell.innerHTML = '<input type="text" id="input_' + i.toString() + '" inputmode="numeric" pattern="[1-4]" placeholder="Guess 0-3">';
             let input = document.getElementById("input_" + i.toString());
             input_objs.push(input);
         }
 
         for (let i = 0 ; i < 3; i++)
         {
-            input_objs[i].addEventListener("input", make_input_keypress(i,input_objs));
+            input_objs[i].addEventListener("input", make_input_keypress(input_objs));
             input_objs[i].addEventListener("keypress", on_keypress);
         }
     }
@@ -153,10 +153,13 @@ function next_turn(use_guess_input)
         const secret_words = JSON.parse(client.get_secret_words());
         const cell_descr = row.insertCell(-1);
         cell_descr.innerHTML = "Secret words: ";
-        for (let word of secret_words)
+        for (let i = 0; i < secret_words.length; i++)
         {
+            let word = secret_words[i];
             const cell = row.insertCell(-1);
             cell.innerHTML = word;
+            cell.style.backgroundColor = hidden_word_colours[i];
+            cell.style.color = "black";
         }
     }
     else
@@ -203,20 +206,23 @@ function trim_input(s) {
     return s;
 }
 
-function make_input_keypress(current, dom_objs)
+function make_input_keypress(dom_objs)
 {
     return () => {
-        let dom_obj = dom_objs[current];
-        let cur_input = dom_obj.value;
-        dom_obj.value = trim_input(cur_input);
+        for (let i = 0; i < dom_objs.length; i++)
+        {
+            let dom_obj = dom_objs[i];
+            let cur_input = dom_obj.value;
+            dom_obj.value = trim_input(cur_input);
 
-        let inputs = dom_objs.map((x) => x.value);
-        if (!input_valid(current, inputs)) {
-            dom_obj.style.backgroundColor = "#FCBAB1";
-            dom_obj.style.color = "black";
-        }
-        else {
-            dom_obj.style.backgroundColor = "";
+            let inputs = dom_objs.map((x) => x.value);
+            if (!input_valid(i, inputs)) {
+                dom_obj.style.backgroundColor = "#FCBAB1";
+                dom_obj.style.color = "black";
+            }
+            else {
+                dom_obj.style.backgroundColor = "";
+            }
         }
     }
 }
@@ -242,6 +248,8 @@ function try_next_turn_with_input()
     next_turn(true);
     return true;
 }
+
+//
 
 //const embedding_name = "glove_filtered.embspace";
 const embedding_name = "fasttext_filtered.embspace";
