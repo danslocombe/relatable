@@ -90,8 +90,8 @@ impl Game {
 
     fn get_clue(&self, rng : FroggyRand, id : u8, embedding_space : &EmbeddingSpace) -> String 
     {
-        let hidden_word = &self.hidden_words[id as usize];
-        log!("get_clue for hidden word '{}'", hidden_word);
+        //let hidden_word = &self.hidden_words[id as usize];
+        //log!("get_clue for hidden word '{}'", hidden_word);
         //let best = embedding_space.get_best(hidden_word);
         let best = embedding_space.get_best_avoiding_others(id as usize, &self.hidden_words[0..]);
 
@@ -106,20 +106,19 @@ impl Game {
 
             let (chosen, sim) = best[chosen_id];
 
-            log!("trying {}, id={} sim={}", chosen, chosen_id, sim);
+            //log!("trying {}, id={} sim={}", chosen, chosen_id, sim);
 
             // TODO check against other hidden words.
 
             if (!self.word_used(chosen))
             {
-                log!("Chose {}", chosen);
+                //log!("Chose {}", chosen);
                 return chosen.to_owned();
             }
         }
     }
 
     fn generate_turn(&mut self, rng : FroggyRand, embedding_space : &EmbeddingSpace) -> Option<Turn> {
-        log!("generate_turn()");
         let message = self.deck.next()?;
         let ordering = message.to_ordering();
 
@@ -136,7 +135,6 @@ impl Game {
 
     pub fn next_turn(&mut self, guess : Option<Message>, embedding_space : &EmbeddingSpace)
     {
-        log!("next_turn()");
         let current_turn = self.past_turns.len();
         let new_turn = self.generate_turn(self.rng.subrand(current_turn), embedding_space).unwrap();
 

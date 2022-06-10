@@ -4,18 +4,20 @@ import { Client } from "../pkg/index.js"
 const query_string = window.location.search;
 let url_params = new URLSearchParams(query_string);
 
-var game_seed = new Date().toISOString().slice(0, 10);
+var game_seed = "daily-" + (new Date().toISOString().slice(0, 10));
 if (url_params.has("seed"))
 {
-    game_seed = parseInt(url_params.get("seed"));
+    game_seed = url_params.get("seed");
+    console.log("Taking seed from url param '" + game_seed + "'");
+}
+else
+{
+    console.log("Using daily seed '" + game_seed + "'");
 }
 
 var client = undefined;
 
 var hidden_word_colours = ["#FCDDFF", "#FFFFCF", "#D9FFDF", "#D9FFFF"];
-//var hidden_word_colours = ["#FCDDFF", "#FFFFCF", "#FFD9E8", "#D9FFFF"];
-//var colour_correct = "#D9FFDF";
-//var colour_incorrect = "white";
 
 function add_turn(table_body, turn, current_turn)
 {
@@ -27,7 +29,6 @@ function add_turn(table_body, turn, current_turn)
         }
     }
 
-    console.log(turn);
     const clues_row = table_body.insertRow(-1);
     const new_cell_clues = clues_row.insertCell(-1);
     new_cell_clues.innerHTML = "Message";
@@ -204,7 +205,6 @@ function make_input_keypress(current, dom_objs)
 {
     return () => {
         let dom_obj = dom_objs[current];
-        // todo ensure inputs are different
         let cur_input = dom_obj.value;
         dom_obj.value = trim_input(cur_input);
 

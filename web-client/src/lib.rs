@@ -37,25 +37,21 @@ impl Client {
     pub fn new_game(&mut self, seed : &str)
     {
         let game = game::Game::new(seed, &self.embedding_space);
-        log!("{:?}", game);
+        //log!("{:?}", game);
         self.game = Some(game);
     }
 
     pub fn next_turn(&mut self, guess_0 : i32, guess_1 : i32, guess_2 : i32)
     {
         let guess = message::Message::from_ordering([guess_0 as u8, guess_1 as u8, guess_2 as u8]);
-        log!("Generated guess message {:?} from {} {} {}", guess, guess_0, guess_1, guess_2);
+        //log!("Generated guess message {:?} from {} {} {}", guess, guess_0, guess_1, guess_2);
         self.game.as_mut().unwrap().next_turn(Some(guess), &self.embedding_space);
-
-        log!("{:?}", self.game.as_ref().unwrap());
     }
 
     pub fn next_turn_noguess(&mut self)
     {
         //let g = message::Message::
         self.game.as_mut().unwrap().next_turn(None, &self.embedding_space);
-
-        log!("{:?}", self.game.as_ref().unwrap());
     }
 
     pub fn get_current_turn_json(&self) -> String {
