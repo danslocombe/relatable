@@ -30,6 +30,13 @@ impl TextEmbeddingSpace {
         while let Ok(size) = reader.read_line(&mut line)
         {
             i+= 1;
+
+            if (i == 1) {
+                // Skip first line
+                line.clear();
+                continue;
+            }
+
             let mut splits = line.split_ascii_whitespace();
 
             if let Some(word) = splits.next()
@@ -310,10 +317,13 @@ fn main() {
     let glove_filtered_bin_path = r"C:\Users\Dan\vecrypto\Gen\glove_filtered.embspace";
     let wordlist_path = r"C:\Users\Dan\vecrypto\Gen\wordlist.txt";
 
+    let fasttext_path = r"C:\Users\Dan\fasttext\crawl-300d-2M.vec";
+    let fasttext_filtered_bin_path = r"C:\Users\Dan\vecrypto\Gen\fasttext_filtered.embspace";
+
     //let glove_25_path = r"C:\Users\Dan\glove\glove.twitter.27B.25d.txt";
     //transform_and_write(glove_200_path, glove_200_bin_path, None);
-    //let words = load_wordlist(wordlist_path);
-    //transform_and_write(glove_200_path, glove_filtered_bin_path, Some(&words));
+    let words = load_wordlist(wordlist_path);
+    transform_and_write(fasttext_path, fasttext_filtered_bin_path, Some(&words));
 
     /*
     let space = MemmappedSpace::load(glove_filtered_bin_path);
@@ -356,6 +366,7 @@ fn main() {
     }
     */
 
+    /*
     let space = MemmappedSpace::load(glove_200_bin_path);
 
     let hot = space.find_linear("hot").unwrap();
@@ -388,5 +399,6 @@ fn main() {
 
         //println!("{} similarity {}", input_word, sim);
     }
+    */
 
 }
