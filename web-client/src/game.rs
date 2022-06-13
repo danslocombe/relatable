@@ -1,3 +1,5 @@
+use std::ascii::AsciiExt;
+
 use froggy_rand::FroggyRand;
 use serde::Serialize;
 
@@ -90,21 +92,25 @@ impl Game {
 
     fn get_clue(&self, rng : FroggyRand, id : u8, embedding_space : &EmbeddingSpace) -> String 
     {
-        //let hidden_word = &self.hidden_words[id as usize];
+        let hidden_word = &self.hidden_words[id as usize];
         //log!("get_clue for hidden word '{}'", hidden_word);
         //let best = embedding_space.get_best(hidden_word);
         let best = embedding_space.get_best_avoiding_others(id as usize, &self.hidden_words[0..]);
 
         let mut i = 0;
         loop {
-            let chosen_id = rng.gen_froggy(("choose", i), 0., 6. + (i as f64), 2).floor() as usize;
+            let chosen_id = rng.gen_froggy(("choose", i), 0., 7. + (i as f64), 2).floor() as usize;
             i += 1;
             if chosen_id > best.len()
             {
                 continue;
             }
 
-            let (chosen, sim) = best[chosen_id];
+            let (chosen, _sim) = best[chosen_id];
+
+            if (reject_common_prefix_len(chosen, &hidden_word)) {
+                continue;
+            }
 
             //log!("trying {}, id={} sim={}", chosen, chosen_id, sim);
 
@@ -156,5 +162,48 @@ impl Game {
         }
 
         count
+    }
+}
+
+fn reject_common_prefix_len(xs : &str, ys: &str) -> bool {
+    let min_len = xs.len().min(ys.len());
+
+    let common_prefix = get_common_prefix_len(xs, ys);
+
+    common_prefix > min_len / 2
+}
+
+fn get_common_prefix_len(xs : &str, ys : &str) -> usize {
+
+    let mut i = 0;
+
+    for (x, y) in xs.chars().zip(ys.chars())
+    {
+        if (x.to_ascii_lowercase() != y.to_ascii_lowercase()) {
+            break;
+        }
+
+        i+=1;
+    }
+
+    return i;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reject_common_prefix_len_test_postive()
+    {
+        assert!(reject_common_prefix_len("bed", "bedroom"));
+        assert!(reject_common_prefix_len("camping", "camper"));
+    }
+
+    #[test]
+    fn reject_common_prefix_len_test_negative()
+    {
+        assert!(!reject_common_prefix_len("bed", "hotel"));
+        assert!(!reject_common_prefix_len("camping", "tent"));
     }
 }
