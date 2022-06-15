@@ -1,3 +1,3 @@
 del ..\docs\*
-npm run build
+call npm run build
 copy dist\* ..\docs\
