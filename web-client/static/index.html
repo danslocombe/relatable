@@ -13,7 +13,7 @@
         <summary>How to play</summary>
         <p>
           <!-- <pre> -->
-Vecrypto is a game about decoding and intercepting the message sent between two AI players. It is a single player variant of the greatest board game of all time <a href="https://boardgamegeek.com/boardgame/225694/decrypto" target="_blank">Decrypto</a>.
+Vecrypto is a game about intercepting and decoding messages sent between two AI players. It is a single player variant of the greatest board game of all time <a href="https://boardgamegeek.com/boardgame/225694/decrypto" target="_blank">Decrypto</a>.
         <br />
         <br />
 
@@ -43,14 +43,19 @@ You should use this to try and guess at the hidden words to crack two sent messa
           Vecrypto works by using <a href="https://en.wikipedia.org/wiki/Word_embedding" target="_blank">word vector embeddings</a>.
           <br />
           <br />
-          Embeddings map words to a position in a vector space where "similar" words are mapped "close" positions in the space.
+          Embeddings assign a collection of words a position in space. They do so with the condition that "similar" words should be mapped "close" positions.
           <br />
-          For example "desk" and "chair" may be mapped to close vectors but "desk" and "campfire" would be mapped to very far positions.
           <br />
-          Using such an embedding the AI player can find words that are similar to the hidden words to set as clues.
+          For example if we wanted to create an embedding that mapped furniture to positions on the globe, we might put "chair" and "stool" in Europe so they are close.
+          Then "desk" and "table" in America and "hammock" away in Australia.
+          <br />
+          Computers can construct much more complicated spaces. They can arrange dictionaries of words in spaces with hundreds of dimensions. 
+          <br />
+          Using such an embedding the AI players of Vecrypto can find words that are similar to the hidden words and set clues.
           <br />
           <br />
           <!-- Currently clues are built from <a href="https://nlp.stanford.edu/projects/glove/" target="_blank">GloVe embeddings</a>. -->
+          Currently clues are built from <a href="https://fasttext.cc/" target="_blank">FastText embeddings</a>.
         </details>
       <details>
         <summary>Game settings</summary>
