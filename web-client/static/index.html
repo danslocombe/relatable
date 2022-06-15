@@ -52,6 +52,10 @@ You should use this to try and guess at the hidden words to crack two sent messa
           <br />
           <!-- Currently clues are built from <a href="https://nlp.stanford.edu/projects/glove/" target="_blank">GloVe embeddings</a>. -->
         </details>
+      <details>
+        <summary>Game settings</summary>
+        Game seed <input id="game_seed_input" value="daily-1">
+      </details>
       </div>
       <hr />
       <div id="turns">
@@ -59,11 +63,18 @@ You should use this to try and guess at the hidden words to crack two sent messa
           <tbody id="turn_table_body">
           </tbody>
         </table>
+        <div id="button_controls">
+          <!--
         <button id="submit">Submit</button>
+        <button id="give_up">Give up</button>
+          -->
+        </div>
         <div id="correct_guess_count"></div>
         <table id="secret_words">
           <tbody></tbody>
         </table>
+        <div id="play_again">
+        </div>
       </div>
     </div>
     <footer>

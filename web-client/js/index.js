@@ -135,19 +135,34 @@ function next_turn(use_guess_input)
         client.next_turn_noguess();
     }
 
+    redraw(false);
+}
+
+function redraw(gave_up)
+{
     const correct_guess_count = client.correct_guess_count();
+    const won = correct_guess_count == 2;
     let turns = JSON.parse(client.get_past_turns_json());
     let current_turn = null;
-    if (correct_guess_count < 2)
+    if (!won && !gave_up)
     {
         current_turn = JSON.parse(client.get_current_turn_json());
     }
 
     rebuild_turns(turns, current_turn);
 
-    if (correct_guess_count == 2)
+    if (won || gave_up)
     {
-        document.getElementById("correct_guess_count").innerHTML = "You won in " + turns.length + " turns!";
+        document.getElementById("button_controls").innerHTML = "";
+        if (won)
+        {
+            document.getElementById("correct_guess_count").innerHTML = "You won in " + turns.length + " turns!";
+        }
+        else
+        {
+            document.getElementById("correct_guess_count").innerHTML = "You gave up :(";
+        }
+
         const secret_table = document.getElementById("secret_words");
         const row = secret_table.insertRow(-1);
         const secret_words = JSON.parse(client.get_secret_words());
@@ -161,6 +176,14 @@ function next_turn(use_guess_input)
             cell.style.backgroundColor = hidden_word_colours[i];
             cell.style.color = "black";
         }
+
+        document.getElementById("play_again").innerHTML = "<button id='play_again_button'>Play again</button>";
+        document.getElementById("play_again_button").addEventListener("click", () => {
+            document.getElementById("secret_words").innerHTML = "";
+            document.getElementById("play_again").innerHTML = "";
+            const new_seed = Math.floor(Math.random() * 1000 * 1000).toString();
+            reset_game(new_seed);
+        });
     }
     else
     {
@@ -263,12 +286,23 @@ fetch(embedding_name)
         const emb_space_binary = new Uint8Array(emb_space_arraybuffer);
         client = new Client(emb_space_binary);
 
-        client.new_game(game_seed);
-        client.next_turn_noguess();
-        client.next_turn_noguess();
-        next_turn(false);
-
-        document.getElementById("submit").addEventListener("click", () => {
-            try_next_turn_with_input();
-        })
+        reset_game(game_seed);
     });
+
+function reset_game(seed)
+{
+    document.getElementById("button_controls").innerHTML = "<button id='submit'>Submit</button>" + "<button id='give_up'>Give up</button>";
+    document.getElementById("submit").addEventListener("click", () => {
+        try_next_turn_with_input();
+    });
+
+    document.getElementById("give_up").addEventListener("click", () => {
+        redraw(true);
+    });
+
+    document.getElementById("game_seed_input").value = seed;
+    client.new_game(seed);
+    client.next_turn_noguess();
+    client.next_turn_noguess();
+    next_turn(false);
+}
