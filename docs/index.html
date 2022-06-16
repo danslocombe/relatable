@@ -2,18 +2,38 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Vecrypto</title>
+    <title>Relatable</title>
     <link rel="stylesheet" href="simple-css-min.css">
   </head>
   <body>
     <div id="align">
-      <h1>Vecrypto</h1>
+      <h1>Relatable</h1>
       <div>
       <details>
         <summary>How to play</summary>
         <p>
+          Relatable is a game about guessing similar words.
+        <br />
+          <br />
+          The game starts by giving the computer player four hidden words.
+          <br />
+          Each turn the computer player generates a set of clues to three of the four words.
+          <br />
+          Clues are made of new words that each allude to one of the hidden words.
+          <br />
+          You have to guess which of the hidden words the clues are hinting at.
+          <br />
+          After you submit a guess the real answers are revealed, which you can use to help in future guesses.
+          <br />
+          <br />
+          You win when you correctly guess all clues in a turn, on two seperate turns.
+          You start with two turns already revealed. 
+          <br />
+          <br />
+          Good luck!
           <!-- <pre> -->
-Vecrypto is a game about intercepting and decoding messages sent between two AI players. It is a single player variant of the greatest board game of all time <a href="https://boardgamegeek.com/boardgame/225694/decrypto" target="_blank">Decrypto</a>.
+            <!--
+Relatable is a game about intercepting and decoding messages sent between two AI players. It is a single player variant of the greatest board game of all time <a href="https://boardgamegeek.com/boardgame/225694/decrypto" target="_blank">Decrypto</a>.
         <br />
         <br />
 
@@ -35,15 +55,16 @@ You can see the history of sent messages and the decoded sequence.
 You should use this to try and guess at the hidden words to crack two sent messages to win.
 
         <br />
+            -->
           <!-- </pre> -->
         </p>
         </details>
         <details>
-          <summary>Explanation</summary>
-          Vecrypto works by using <a href="https://en.wikipedia.org/wiki/Word_embedding" target="_blank">word vector embeddings</a>.
+          <summary>Mathsy details</summary>
+          Relatable works by using <a href="https://en.wikipedia.org/wiki/Word_embedding" target="_blank">word vector embeddings</a>.
           <br />
           <br />
-          Embeddings assign a collection of words a position in space. They do so with the condition that "similar" words should be mapped "close" positions.
+          Embeddings assign each word in a collection a position in space. They do so with the condition that "similar" words should be mapped "close" positions.
           <br />
           <br />
           For example if we wanted to create an embedding that mapped furniture to positions on the globe, we might put "chair" and "stool" in Europe so they are close.
@@ -51,11 +72,12 @@ You should use this to try and guess at the hidden words to crack two sent messa
           <br />
           Computers can construct much more complicated spaces. They can arrange dictionaries of words in spaces with hundreds of dimensions. 
           <br />
-          Using such an embedding the AI players of Vecrypto can find words that are similar to the hidden words and set clues.
+          Using such an embedding the AI player of Relatable can find words that are similar to the hidden words and set clues.
           <br />
           <br />
           <!-- Currently clues are built from <a href="https://nlp.stanford.edu/projects/glove/" target="_blank">GloVe embeddings</a>. -->
           Currently clues are built from <a href="https://fasttext.cc/" target="_blank">FastText embeddings</a>.
+          Any distasteful (yeah there are some) clues come from using this data unfiltered.
         </details>
       <details>
         <summary>Game settings</summary>
