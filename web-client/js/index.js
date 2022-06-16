@@ -291,7 +291,7 @@ fetch(embedding_name)
 
 function reset_game(seed)
 {
-    document.getElementById("button_controls").innerHTML = "<button id='submit'>Submit</button>" + "<button id='give_up'>Give up</button>";
+    document.getElementById("button_controls").innerHTML = "<button id='submit'>Submit</button>" + "&nbsp;"+  "<button id='give_up'>Give up</button>";
     document.getElementById("submit").addEventListener("click", () => {
         try_next_turn_with_input();
     });
