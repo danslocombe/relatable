@@ -37,6 +37,7 @@ impl Client {
     pub fn new_game(&mut self, seed : &str)
     {
         let game = game::Game::new(seed, &self.embedding_space);
+        log!("Difficulty {}", game.score_difficulty(&self.embedding_space));
         //log!("{:?}", game);
         self.game = Some(game);
     }

@@ -41,7 +41,7 @@ impl EmbeddingSpace
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Serialize)]
-pub struct Word(usize);
+pub struct Word(pub usize);
 
 impl Word
 {
@@ -59,6 +59,10 @@ impl Word
     fn get_vector_offset(&self, embedding_space : &EmbeddingSpace) -> usize
     {
         self.0 + 4 + self.get_string_size(embedding_space)
+    }
+
+    pub fn similarity(&self, other : &Self, embedding_space : &EmbeddingSpace) -> f32 {
+        similarity(self.get_vector(embedding_space), other.get_vector(embedding_space))
     }
 }
 
@@ -120,7 +124,7 @@ fn get_mag(v : &[f32]) -> f64
     mag
 }
 
-pub fn similarity(u : &[f32], v : &[f32]) -> f32
+fn similarity(u : &[f32], v : &[f32]) -> f32
 {
     assert_eq!(u.len(), v.len());
     let mag_u = get_mag(u);

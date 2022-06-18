@@ -21,19 +21,30 @@ pub struct Turn {
     clues : [String;3],
 }
 
-fn pick_n_different(rand : &FroggyRand, min : usize, max : usize, n : usize) -> Vec<usize> {
-    let mut picked = Vec::with_capacity(n);
+fn pick_hidden_words(rand : &FroggyRand,  embedding_space: &EmbeddingSpace) -> Vec<Word> {
+    let mut picked = Vec::with_capacity(4);
 
-    let mut i = 0;
-    while picked.len() < n {
-        i += 1;
+    let mut seed = 0;
+    while picked.len() < 4 {
+        seed += 1;
 
-        let chosen = rand.gen_usize_range(i, min, max);
+        let chosen_i = rand.gen_usize_range(seed, 0, embedding_space.size);
+        let candidate_word = embedding_space.all_words()[chosen_i];
 
-        if (!picked.contains(&chosen))
+        if (picked.contains(&candidate_word))
         {
-            picked.push(chosen);
+            continue;
         }
+
+        // Heuristic - skip words with starting with uppercase letters as hidden words
+        // They have weird similarity properties
+        let first_char = candidate_word.get_string(embedding_space).chars().next().unwrap();
+        if (first_char.is_uppercase())
+        {
+            continue;
+        }
+
+        picked.push(candidate_word);
     }
 
     picked
@@ -44,8 +55,7 @@ impl Game {
         let rng = froggy_rand::FroggyRand::new(0).subrand(seed);
         let deck = Deck::new(&rng);
 
-        let hidden_word_ids_vec = pick_n_different(&rng.subrand("n_different"), 0, embedding_space.size, 4);
-        let hidden_words_vec : Vec<Word> = hidden_word_ids_vec.iter().map(|&i| embedding_space.all_words()[i]).collect();
+        let hidden_words_vec = pick_hidden_words(&rng.subrand("n_different"), embedding_space);
         let hidden_words = hidden_words_vec.try_into().unwrap();
 
         Self {
@@ -55,6 +65,22 @@ impl Game {
             current_turn : Default::default(),
             rng,
         }
+    }
+
+    pub fn score_difficulty(&self, embedding_space: &EmbeddingSpace) -> f32
+    {
+        let mut total_dist = 0.;
+
+        for i in 0..4 {
+            for j in i+1..4 {
+                let word_x = self.hidden_words[i];
+                let word_y = self.hidden_words[j];
+                let similarity = word_x.similarity(&word_y, embedding_space);
+                total_dist += similarity * similarity;
+            }
+        }
+
+        total_dist
     }
 
     fn word_used(&self, word : Word) -> bool {
@@ -162,8 +188,6 @@ fn score_words(target_word_id : usize, hidden_words : &[Word], embedding_space :
     let target_word = hidden_words[target_word_id];
     let target_vector = target_word.get_vector(embedding_space);
 
-    let avoid_vectors = hidden_words.iter().filter(|&&x| x != target_word).map(|x| x.get_vector(embedding_space)).collect::<Vec<_>>();
-
     let mut scored_words = Vec::with_capacity(words.len());
     for &word in words {
         if (word == target_word)
@@ -173,7 +197,7 @@ fn score_words(target_word_id : usize, hidden_words : &[Word], embedding_space :
 
         let mut most_similar = None;
         for hidden_word in hidden_words {
-            let similarity = embedding_space::similarity(word.get_vector(embedding_space), hidden_word.get_vector(embedding_space));
+            let similarity = word.similarity(hidden_word, embedding_space);
             if let Some((_most_similar_word, most_similar_score)) = most_similar {
                 if (similarity > most_similar_score) {
                     most_similar = Some((hidden_word, similarity));
@@ -192,10 +216,14 @@ fn score_words(target_word_id : usize, hidden_words : &[Word], embedding_space :
 
         let mut score = 0.;
 
-        score += (avoid_vectors.len() + 3) as f32 * embedding_space::similarity(target_vector, word.get_vector(embedding_space));
 
-        for avoid in &avoid_vectors {
-            score -= embedding_space::similarity(*avoid, word.get_vector(embedding_space));
+        for (i, hidden_word) in hidden_words.iter().enumerate() {
+            if i == target_word_id {
+                score += 6.0 * word.similarity(hidden_word, embedding_space);
+            }
+            else {
+                score -= word.similarity(hidden_word, embedding_space);
+            }
         }
 
         scored_words.push((word.clone(), score));
