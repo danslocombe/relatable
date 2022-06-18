@@ -69,7 +69,8 @@ impl Client {
     }
 
     pub fn get_secret_words(&self) -> String {
-        let hidden = &self.game.as_ref().unwrap().hidden_words;
-        serde_json::to_string(hidden).unwrap()
+        let hidden_words = &self.game.as_ref().unwrap().hidden_words;
+        let hidden = hidden_words.iter().map(|x| x.get_string(&self.embedding_space)).collect::<Vec<_>>();
+        serde_json::to_string(&hidden).unwrap()
     }
 }
