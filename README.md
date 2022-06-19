@@ -11,4 +11,4 @@ You win when you correctly guess all clues in a turn, on two seperate turns.
 You start with two turns already revealed. 
 
 
-## [Play here](https://github.com/danslocombe/vecrypto)
+## [Play here](http://danslocombe.github.io/relatable)
