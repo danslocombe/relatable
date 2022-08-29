@@ -74,7 +74,7 @@ class Relatable extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      currentClue: 0,
+      currentClue: 1,
       currentGroup: 1,
       wordSets: testWordSets,
       clues: testClues,
@@ -138,13 +138,13 @@ class Relatable extends Component {
 
   render = () => {
     const swiping_down = this.swipingDown();
-    console.log("Swiping down " + swiping_down);
-    console.log(this.state);
 
-    const rendered_clues = this.state.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
+    const rendered_clues = this.state.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue - 1, this.state.currentGroup - 1, swiping_down));
     return (
     <div>
     <Carousel 
+      centerMode
+      centerSlidePercentage={35}
         selectedItem={this.state.currentClue}
         onChange={this.setCurrentClue}
         onSwipeMove={this.handleClueSwipeMove}
@@ -154,15 +154,20 @@ class Relatable extends Component {
         showThumbs={false}
         showIndicators={true}
         statusFormatter={(current, total) => `Word ${current} out of ${total}`}
+        preventMovementUntilSwipeScrollTolerance={10}
         >
+      <div></div>
         {rendered_clues}
+      <div></div>
     </Carousel>
     <h1>↓</h1> 
     <WordGroupCarousel currentSlide={this.state.currentGroup} setCurrentSlide={this.setCurrentGroup}>
+      <div></div>
       {make_group_container(0, this.state.wordSets[0])}
       {make_group_container(1, this.state.wordSets[1])}
       {make_group_container(2, this.state.wordSets[2])}
       {make_group_container(3, this.state.wordSets[3])}
+      <div></div>
     </WordGroupCarousel>
     </div>
     );
@@ -181,7 +186,7 @@ class WordGroupCarousel extends Component {
       onChange={this.props.setCurrentSlide}
 
       centerMode
-      centerSlidePercentage={80}
+      centerSlidePercentage={50}
 
       showStatus={false}
       autoPlay={false}
