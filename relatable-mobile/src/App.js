@@ -3,6 +3,7 @@ import './App.css';
 import { Component } from 'react';
 import { Carousel } from 'react-responsive-carousel';
 import styles from 'react-responsive-carousel/lib/styles/carousel.min.css';
+import { ScrollMenu, VisibilityContext } from "react-horizontal-scrolling-menu";
 
 
 const carousel_padding = 20;
@@ -28,6 +29,18 @@ const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) =
       padding: "10px",
     };
   }
+
+  return (<div key={`slide_${id}`} style={style}>
+      <div  style={rectStyle}>
+      <b>{clue}</b>
+      </div>
+  </div>
+);
+}
+
+const make_clue_container_static = (id, clue) => {
+  const style = { padding: carousel_padding, height: clue_word_carousel_height, display: 'flex', justifyContent: 'center', alignItems: 'center'};
+  let rectStyle = {};
 
   return (<div key={`slide_${id}`} style={style}>
       <div  style={rectStyle}>
@@ -140,9 +153,9 @@ class Relatable extends Component {
     const swiping_down = this.swipingDown();
 
     const rendered_clues = this.state.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue - 1, this.state.currentGroup - 1, swiping_down));
-    return (
-    <div>
-    <Carousel 
+
+
+    let x = (<div><Carousel 
       centerMode
       centerSlidePercentage={35}
         selectedItem={this.state.currentClue}
@@ -169,8 +182,23 @@ class Relatable extends Component {
       {make_group_container(3, this.state.wordSets[3])}
       <div></div>
     </WordGroupCarousel>
-    </div>
-    );
+    </div>);
+
+    const test_items = [0, 1, 2];
+    return (
+    <div>
+      <ScrollMenu>
+        <div style = {{width:"200px"}}>
+        </div>
+        {
+          this.state.clues.map((clue, id) => (
+              make_clue_container_static(id, clue)
+          ))
+        }
+        <div style = {{width:"200px"}}>
+        </div>
+      </ScrollMenu>
+    </div>);
   }
 }
 
