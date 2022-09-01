@@ -1,6 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
 import { Component } from 'react';
+import React from "react";
 import { Carousel } from 'react-responsive-carousel';
 import styles from 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { ScrollMenu, VisibilityContext } from "react-horizontal-scrolling-menu";
@@ -66,9 +67,110 @@ function App() {
   return (
     <div className="App" style={{}}>
       <h1>Relatable</h1>
-      <Relatable />
+      <MakeTest />
     </div>
   );
+}
+
+function dan_lerp(x0, x, k) {
+  return (x0 * (k-1) + x) / k;
+}
+
+function MakeTest() {
+    return (
+    <div style={{
+      display: "flex",
+      border: "1px solid",
+      width: "320px",
+      height: "568px",
+      scrollSnapType: "x mandatory",
+      overflowX: "auto",
+      whiteSpace: "nowrap",
+      position: "relative",
+      //-webkit-overflow-scrolling: "touch",
+      
+      //&::-webkit-scrollbar {
+        //display: none;
+      //}
+    }}
+    onScroll = {(e) => {
+      // TODO get actual width
+      let centre = 338/2 + e.target.scrollLeft;
+      console.log(centre);
+      let min_dist = 1000;
+      let min_x = 0;
+      let min_width = 0;
+      let min_index = 0;
+
+      let current_x = 0;
+      for (let i = 0; i < e.target.childNodes.length; i++)
+      {
+        let child = e.target.childNodes[i];
+
+        let target_x = (current_x + child.clientWidth / 2);
+        let dist = Math.abs(centre - target_x);
+        if (dist < min_dist) {
+          min_index = i;
+          min_dist = dist;
+          min_width = child.clientWidth;
+          min_x = target_x;
+        }
+        current_x += child.clientWidth;
+      }
+
+      if (min_dist < 50) {
+        //e.target.scrollLeft = min_x - 338/2;
+        e.target.scrollLeft = dan_lerp(e.target.scrollLeft, min_x - 338/2, 6);
+      }
+
+      console.log(min_index);
+    }}
+    >
+        <div style = {{minWidth:"200px"}}>
+        </div>
+        {
+          testClues.map((clue, id) => (
+              make_clue_container_static(id, clue)
+          ))
+        }
+        <div style = {{minWidth:"200px"}}>
+        </div>
+    </div>);
+}
+
+function MakeMouseMoveTest() {
+    const { dragStart, dragStop, dragMove, dragging } = useDrag();
+    const handleDrag = ({ scrollContainer }) => (
+      ev
+    ) =>
+    {
+
+      console.log("hello");
+      return dragMove(ev, (posDiff) => {
+        if (scrollContainer.current) {
+          scrollContainer.current.scrollLeft += posDiff;
+        }
+      });
+    }
+
+    return (
+    <div>
+      <ScrollMenu 
+        onMouseDown={() => dragStart}
+        onMouseUp={() => dragStop}
+        onMouseMove={handleDrag}
+      >
+        <div style = {{width:"200px"}}>
+        </div>
+        {
+          testClues.map((clue, id) => (
+              make_clue_container_static(id, clue)
+          ))
+        }
+        <div style = {{width:"200px"}}>
+        </div>
+      </ScrollMenu>
+    </div>);
 }
 
 const testWordSets = [
@@ -81,6 +183,9 @@ const testWordSets = [
 const testClues = [
   'Hutch',
   'Concentrate',
+  'Blahblahblah',
+  'Qwerty',
+  'Typewriter',
 ];
 
 class Relatable extends Component {
@@ -184,21 +289,7 @@ class Relatable extends Component {
     </WordGroupCarousel>
     </div>);
 
-    const test_items = [0, 1, 2];
-    return (
-    <div>
-      <ScrollMenu>
-        <div style = {{width:"200px"}}>
-        </div>
-        {
-          this.state.clues.map((clue, id) => (
-              make_clue_container_static(id, clue)
-          ))
-        }
-        <div style = {{width:"200px"}}>
-        </div>
-      </ScrollMenu>
-    </div>);
+    return x;
   }
 }
 
@@ -228,3 +319,49 @@ class WordGroupCarousel extends Component {
 }
 
 export default App;
+
+
+function useDrag() {
+  const [clicked, setClicked] = React.useState(false);
+  const [dragging, setDragging] = React.useState(false);
+  const position = React.useRef(0);
+
+  const dragStart = React.useCallback((ev) => {
+    position.current = ev.clientX;
+    setClicked(true);
+  }, []);
+
+  const dragStop = React.useCallback(
+    () =>
+      // NOTE: need some delay so item under cursor won't be clicked
+      window.requestAnimationFrame(() => {
+        setDragging(false);
+        setClicked(false);
+      }),
+    []
+  );
+
+  const dragMove = (ev, cb) => {
+    const newDiff = position.current - ev.clientX;
+
+    const movedEnough = Math.abs(newDiff) > 5;
+
+    if (clicked && movedEnough) {
+      setDragging(true);
+    }
+
+    if (dragging && movedEnough) {
+      position.current = ev.clientX;
+      cb(newDiff);
+    }
+  };
+
+  return {
+    dragStart,
+    dragStop,
+    dragMove,
+    dragging,
+    position,
+    setDragging
+  };
+}
