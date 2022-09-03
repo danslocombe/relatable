@@ -8,7 +8,7 @@ export default class WoshCarousel extends Component{
 
   constructor(props) {
     super(props);
-    this.state = { scrollPos: 0, touching:false, touchStart: 0, scrollPosStart : 0 };
+    this.state = { scrollPos: 0, touching:false, touchStart: 0, scrollPosStart : 0, currentSelected: 0 };
     this.scroller = createRef();
   }
 
@@ -18,6 +18,13 @@ export default class WoshCarousel extends Component{
 
   componentWillUnmount() {
     clearInterval(this.timerID);
+  }
+
+  set_current_state = (currentSelected) => {
+      if (this.state.currentSelected != currentSelected) {
+        this.props.onSelectedChange(currentSelected)
+        this.setState({currentSelected: currentSelected});
+      }
   }
 
   tick_beta = () => {
@@ -35,6 +42,7 @@ export default class WoshCarousel extends Component{
     let centre = 338/2 + this.state.scrollPos;
     let min_dist = 1000;
     let min_x = 0;
+    let min_i = 0;
     const lerp_k = 7;
     const lerp_k_edge = 10;
     const half_width = 320/2;
@@ -43,6 +51,7 @@ export default class WoshCarousel extends Component{
     let clamp_x_min = items[0].clientWidth + items[1].clientWidth / 2;
     if (centre < clamp_x_min) {
       this.state.scrollPos = dan_lerp(this.state.scrollPos, clamp_x_min - half_width, lerp_k_edge);
+      this.set_current_state(0);
       return;
     }
 
@@ -53,6 +62,7 @@ export default class WoshCarousel extends Component{
     }
     if (centre > clamp_x_max) {
       this.state.scrollPos = dan_lerp(this.state.scrollPos, clamp_x_max - half_width, lerp_k_edge);
+      this.set_current_state(items.length - 3);
       return;
     }
 
@@ -65,12 +75,16 @@ export default class WoshCarousel extends Component{
       if (dist < min_dist) {
         min_dist = dist;
         min_x = target_x;
+        min_i = i;
       }
       current_x += child.clientWidth;
     }
 
-    if (min_dist < 50) {
+    //if (min_dist < 50) {
+    {
       this.state.scrollPos = dan_lerp(this.state.scrollPos, min_x - 338/2, lerp_k);
+
+      this.set_current_state(min_i - 1);
     }
 
   }
@@ -82,7 +96,8 @@ export default class WoshCarousel extends Component{
 
     this.tick_beta();
 
-    this.scroller.current.scrollLeft = this.state.scrollPos;
+    this.scroller.current.scrollLeft = dan_lerp(this.scroller.current.scrollLeft, this.state.scrollPos, 3);
+    //this.scroller.current.scrollLeft = this.state.scrollPos;
   };
 
   render = () => {

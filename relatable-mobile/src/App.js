@@ -68,7 +68,7 @@ function App() {
   return (
     <div className="App" style={{}}>
       <h1>Relatable</h1>
-      <WoshCarousel >
+      <WoshCarousel onSelectedChange={(id) => console.log(id)}>
         {
           testClues.map((clue, id) => (
               make_clue_container_static(id, clue)
