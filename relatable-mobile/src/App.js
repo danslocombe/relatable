@@ -87,23 +87,6 @@ class Relatable extends Component {
     };
   }
 
-  setCurrentClue = (index) => {
-    if (this.state.currentClue !== index) {
-      this.setState({
-        currentClue: index,
-      });
-    }
-  };
-
-  setCurrentGroup = (index) => {
-    let clamped = Math.max(1, Math.min(4, index));
-    if (this.state.currentGroup !== clamped) {
-      this.setState({
-        currentGroup: clamped,
-      });
-    }
-  };
-
   handleClueSwipeMove = (event) => {
     console.log(event);
     if (event.touches.length > 0)
@@ -147,13 +130,19 @@ class Relatable extends Component {
     const rendered_clues = this.state.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
 
     let top = (
-      <WoshCarousel onSelectedChange={(e) => this.setState({currentClue: e})} >
+      <WoshCarousel onSelectedChange={(e) => {
+        this.setState({currentClue: e});
+        navigator.vibrate(5);
+      }} inertia_k={3} >
         {rendered_clues}
     </WoshCarousel>
     );
 
     let bot = (
-    <WoshCarousel onSelectedChange={(e) => this.setState({currentGroup: e})} >
+    <WoshCarousel onSelectedChange={(e) => { 
+      this.setState({currentGroup: e});
+      navigator.vibrate(5);
+      }} inertia_k={1.5}>
       {make_group_container(0, this.state.wordSets[0])}
       {make_group_container(1, this.state.wordSets[1])}
       {make_group_container(2, this.state.wordSets[2])}
@@ -161,14 +150,15 @@ class Relatable extends Component {
     </WoshCarousel>
     );
 
-
     return (
       <div>
-        <div style={{height:'150px'}}>
+        <div style={{height:'150px', display: 'flex', justifyContent: 'center'}}>
           {top}
         </div>
       <h1>↓</h1> 
-      {bot}
+        <div style={{height:'400px', display: 'flex', justifyContent: 'center'}}>
+        {bot}
+        </div>
       </div>
     );
   }

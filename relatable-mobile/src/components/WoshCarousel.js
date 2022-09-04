@@ -40,7 +40,7 @@ export default class WoshCarousel extends Component{
       return;
     }
 
-    let centre = 338/2 + this.state.scrollPos;
+    let centre = 320/2 + this.state.scrollPos;
     let min_dist = 1000;
     let min_x = 0;
     let min_i = 0;
@@ -97,7 +97,7 @@ export default class WoshCarousel extends Component{
 
     this.tick_beta();
 
-    this.scroller.current.scrollLeft = dan_lerp(this.scroller.current.scrollLeft, this.state.scrollPos, 3);
+    this.scroller.current.scrollLeft = dan_lerp(this.scroller.current.scrollLeft, this.state.scrollPos, this.props.inertia_k);
     //this.scroller.current.scrollLeft = this.state.scrollPos;
   };
 
