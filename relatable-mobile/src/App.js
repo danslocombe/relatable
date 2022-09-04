@@ -8,7 +8,7 @@ import { ScrollMenu, VisibilityContext } from "react-horizontal-scrolling-menu";
 import WoshCarousel from './components/WoshCarousel';
 
 
-const carousel_padding = 20;
+const carousel_padding = 40;
 const group_carousel_height = 450;
 const clue_word_carousel_height = 180;
 
@@ -68,13 +68,7 @@ function App() {
   return (
     <div className="App" style={{}}>
       <h1>Relatable</h1>
-      <WoshCarousel onSelectedChange={(id) => console.log(id)}>
-        {
-          testClues.map((clue, id) => (
-              make_clue_container_static(id, clue)
-          ))
-        }
-      </WoshCarousel>
+      <Relatable />
     </div>
   );
 }
@@ -87,7 +81,6 @@ const testWordSets = [
 ];
 
 const testClues = [
-  'aaaaaaaaaaaaaaaaaaa',
   'Hutch',
   'Concentrate',
   //'Blahblahblah',
@@ -153,6 +146,8 @@ class Relatable extends Component {
   }
 
   swipingDown = () => {
+    return true;
+
     if (this.state.swipeStart == null || this.state.swipeCurrent == null)
     {
       return false;
@@ -164,28 +159,37 @@ class Relatable extends Component {
   render = () => {
     const swiping_down = this.swipingDown();
 
-    const rendered_clues = this.state.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue - 1, this.state.currentGroup - 1, swiping_down));
+    const rendered_clues = this.state.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
 
-
-    let x = (<div><Carousel 
-      centerMode
-      centerSlidePercentage={35}
-        selectedItem={this.state.currentClue}
-        onChange={this.setCurrentClue}
-        onSwipeMove={this.handleClueSwipeMove}
-        onSwipeStart={this.handleClueSwipeStart}
-        onSwipeEnd={this.handleClueSwipeEnd}
-        autoPlay={false}
-        showThumbs={false}
-        showIndicators={true}
-        statusFormatter={(current, total) => `Word ${current} out of ${total}`}
-        preventMovementUntilSwipeScrollTolerance={10}
-        >
-      <div></div>
+    let top = (
+      <WoshCarousel onSelectedChange={(e) => this.setState({currentClue: e})} >
         {rendered_clues}
-      <div></div>
-    </Carousel>
-    <h1>↓</h1> 
+    </WoshCarousel>
+    );
+
+    let bot = (
+    <WoshCarousel onSelectedChange={(e) => this.setState({currentGroup: e})} >
+      {make_group_container(0, this.state.wordSets[0])}
+      {make_group_container(1, this.state.wordSets[1])}
+      {make_group_container(2, this.state.wordSets[2])}
+      {make_group_container(3, this.state.wordSets[3])}
+    </WoshCarousel>
+    );
+
+
+    return (
+      <div>
+        <div style={{height:'150px'}}>
+          {top}
+        </div>
+      <h1>↓</h1> 
+      {bot}
+      </div>
+    );
+  }
+}
+
+/*
     <WordGroupCarousel currentSlide={this.state.currentGroup} setCurrentSlide={this.setCurrentGroup}>
       <div></div>
       {make_group_container(0, this.state.wordSets[0])}
@@ -194,11 +198,7 @@ class Relatable extends Component {
       {make_group_container(3, this.state.wordSets[3])}
       <div></div>
     </WordGroupCarousel>
-    </div>);
-
-    return x;
-  }
-}
+    */
 
 class WordGroupCarousel extends Component {
   constructor(props) {

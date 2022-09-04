@@ -13,6 +13,7 @@ export default class WoshCarousel extends Component{
   }
 
   componentDidMount() {
+    this.props.onSelectedChange(0);
     this.timerID = setInterval(() => this.tick(), 15);
   }
 
