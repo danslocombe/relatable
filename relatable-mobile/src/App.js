@@ -20,11 +20,11 @@ const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) =
   const style = { padding: carousel_padding, height: clue_word_carousel_height, display: 'flex', justifyContent: 'center', alignItems: 'center'};
   let rectStyle = {};
 
-  if (swipingDown && id === currentClue)
+  if (swipingDown > 0.1 && id === currentClue)
   {
     rectStyle = {
-      borderRadius: "8px",
-      border: "8px solid " + group_colors[currentGroup],
+      borderRadius: `8px`,
+      border: `${Math.ceil(swipingDown * 8)}px solid ${group_colors[currentGroup]}`,
       padding: "10px",
     };
   }
@@ -114,14 +114,14 @@ class Relatable extends Component {
   }
 
   swipingDown = () => {
-    return true;
-
     if (this.state.swipeStart == null || this.state.swipeCurrent == null)
     {
-      return false;
+      return 0;
     }
 
-    return (this.state.swipeCurrent.y - this.state.swipeStart.y) > 50;
+    let sd = Math.min(1, Math.max(0, this.state.swipeCurrent.y - this.state.swipeStart.y - 80) / 50);
+    console.log(sd);
+    return sd
   }
 
   render = () => {
@@ -151,7 +151,7 @@ class Relatable extends Component {
     );
 
     return (
-      <div>
+      <div onTouchStart={this.handleClueSwipeStart} onTouchMove={this.handleClueSwipeMove} onTouchEnd={this.handleClueSwipeEnd}>
         <div style={{height:'150px', display: 'flex', justifyContent: 'center'}}>
           {top}
         </div>
