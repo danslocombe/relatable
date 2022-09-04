@@ -1,8 +1,9 @@
 import logo from './logo.svg';
 import './App.css';
-import { Component } from 'react';
+import { Component, useEffect, useState } from 'react';
 import React from "react";
 import WoshCarousel from './components/WoshCarousel';
+import init, { Client} from 'vecrypto-web-client'
 
 
 const carousel_padding = 40;
@@ -50,6 +51,24 @@ const make_group_container = (id, words) => {
 };
 
 function App() {
+  let [client, setClient] = useState();
+
+  useEffect(() => {
+    init().then(() => {
+
+      console.log("Running fetch");
+      const embedding_name = "fasttext_filtered.embspace";
+      fetch(embedding_name)
+        .then(response => response.blob())
+        .then(emb_space_blob => emb_space_blob.arrayBuffer())
+        .then(emb_space_arraybuffer => {
+            const emb_space_binary = new Uint8Array(emb_space_arraybuffer);
+            console.log(`Got embedding space size=${emb_space_binary.length}, initialising client`);
+            setClient(new Client(emb_space_binary));
+        });
+    })
+  }, [])
+
   return (
     <div className="App" style={{}}>
       <h1>Relatable</h1>
@@ -88,7 +107,6 @@ class Relatable extends Component {
   }
 
   handleClueSwipeMove = (event) => {
-    console.log(event);
     if (event.touches.length > 0)
     {
       this.setState({
@@ -120,7 +138,6 @@ class Relatable extends Component {
     }
 
     let sd = Math.min(1, Math.max(0, this.state.swipeCurrent.y - this.state.swipeStart.y - 80) / 50);
-    console.log(sd);
     return sd
   }
 

@@ -51,7 +51,7 @@ export default class WoshCarousel extends Component{
     let current_x = 0;
     let clamp_x_min = items[0].clientWidth + items[1].clientWidth / 2;
     if (centre < clamp_x_min) {
-      this.state.scrollPos = dan_lerp(this.state.scrollPos, clamp_x_min - half_width, lerp_k_edge);
+      this.setState((state) => ({scrollPos: dan_lerp(state.scrollPos, clamp_x_min - half_width, lerp_k_edge)}));
       this.set_current_state(0);
       return;
     }
@@ -62,7 +62,7 @@ export default class WoshCarousel extends Component{
         clamp_x_max += items[i].clientWidth
     }
     if (centre > clamp_x_max) {
-      this.state.scrollPos = dan_lerp(this.state.scrollPos, clamp_x_max - half_width, lerp_k_edge);
+      this.setState((state) => ({scrollPos: dan_lerp(state.scrollPos, clamp_x_max - half_width, lerp_k_edge)}));
       this.set_current_state(items.length - 3);
       return;
     }
@@ -83,7 +83,7 @@ export default class WoshCarousel extends Component{
 
     //if (min_dist < 50) {
     {
-      this.state.scrollPos = dan_lerp(this.state.scrollPos, min_x - 338/2, lerp_k);
+      this.setState((state) => ({scrollPos: dan_lerp(state.scrollPos, min_x - 338/2, lerp_k)}));
 
       this.set_current_state(min_i - 1);
     }
