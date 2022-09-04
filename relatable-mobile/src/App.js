@@ -2,9 +2,6 @@ import logo from './logo.svg';
 import './App.css';
 import { Component } from 'react';
 import React from "react";
-import { Carousel } from 'react-responsive-carousel';
-import styles from 'react-responsive-carousel/lib/styles/carousel.min.css';
-import { ScrollMenu, VisibilityContext } from "react-horizontal-scrolling-menu";
 import WoshCarousel from './components/WoshCarousel';
 
 
@@ -31,18 +28,6 @@ const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) =
       padding: "10px",
     };
   }
-
-  return (<div key={`slide_${id}`} style={style}>
-      <div  style={rectStyle}>
-      <b>{clue}</b>
-      </div>
-  </div>
-);
-}
-
-const make_clue_container_static = (id, clue) => {
-  const style = { padding: carousel_padding, height: clue_word_carousel_height, display: 'flex', justifyContent: 'center', alignItems: 'center'};
-  let rectStyle = {};
 
   return (<div key={`slide_${id}`} style={style}>
       <div  style={rectStyle}>
@@ -189,86 +174,5 @@ class Relatable extends Component {
   }
 }
 
-/*
-    <WordGroupCarousel currentSlide={this.state.currentGroup} setCurrentSlide={this.setCurrentGroup}>
-      <div></div>
-      {make_group_container(0, this.state.wordSets[0])}
-      {make_group_container(1, this.state.wordSets[1])}
-      {make_group_container(2, this.state.wordSets[2])}
-      {make_group_container(3, this.state.wordSets[3])}
-      <div></div>
-    </WordGroupCarousel>
-    */
-
-class WordGroupCarousel extends Component {
-  constructor(props) {
-    super(props);
-  }
-
-  render = () => {
-    return <Carousel
-      //transitionTime={0}
-      selectedItem={this.props.currentSlide}
-      onChange={this.props.setCurrentSlide}
-
-      centerMode
-      centerSlidePercentage={50}
-
-      showStatus={false}
-      autoPlay={false}
-      showThumbs={false}
-      showIndicators={false}
-      {...this.props}
-    >
-      {this.props.children}
-    </Carousel>
-  }
-}
 
 export default App;
-
-
-function useDrag() {
-  const [clicked, setClicked] = React.useState(false);
-  const [dragging, setDragging] = React.useState(false);
-  const position = React.useRef(0);
-
-  const dragStart = React.useCallback((ev) => {
-    position.current = ev.clientX;
-    setClicked(true);
-  }, []);
-
-  const dragStop = React.useCallback(
-    () =>
-      // NOTE: need some delay so item under cursor won't be clicked
-      window.requestAnimationFrame(() => {
-        setDragging(false);
-        setClicked(false);
-      }),
-    []
-  );
-
-  const dragMove = (ev, cb) => {
-    const newDiff = position.current - ev.clientX;
-
-    const movedEnough = Math.abs(newDiff) > 5;
-
-    if (clicked && movedEnough) {
-      setDragging(true);
-    }
-
-    if (dragging && movedEnough) {
-      position.current = ev.clientX;
-      cb(newDiff);
-    }
-  };
-
-  return {
-    dragStart,
-    dragStop,
-    dragMove,
-    dragging,
-    position,
-    setDragging
-  };
-}
