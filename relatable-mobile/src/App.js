@@ -38,23 +38,29 @@ const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) =
 );
 }
 
-const make_group_container = (id, words) => {
-  const rendered_words = words.map((word, index) => <p key={index}>{word}</p>);
-
+const make_group_container = (id, words, lastHighlighted) => {
+  let renderedWords = [];
+  for (let i in words) {
+    let word = words[i];
+    if (lastHighlighted && (i == words.length - 1)) {
+      renderedWords.push(<p key={i}><b>{word}</b></p>);
+    }
+    else {
+      renderedWords.push(<p key={i}>{word}</p>);
+    }
+  }
   return (<div key={`slide_${id}`} style={{ padding: carousel_padding, height: group_carousel_height, backgroundColor: group_colors[id] }}>
       Group {id + 1}
       <br/>
       <br/>
 
-      {rendered_words}
+      {renderedWords}
   </div>);
 };
 
 function App() {
   let [client, setClient] = useState();
-  let [currentTurnCount, setCurrentTurnCount] = useState(0);
   let [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
-
   useEffect(() => {
     init().then(() => {
 
@@ -106,10 +112,18 @@ function App() {
     console.log("clues");
     console.log(clues);
 
+    let groupAddedTo = [false, false, false, false];
+    for (let [_clue, mapping] of Object.entries(currentTurnRemapping))
+    {
+      groupAddedTo[mapping] = true;
+    }
+
     return (
       <div className="App" style={{}}>
         <h1>Relatable</h1>
-        <Relatable clues={clues} wordSets={wordSets}
+        <Relatable
+          clues={clues}
+          wordSets={wordSets}
           onAddWord={(clue, remapping) => {
             console.log("OnAddWord");
             setCurrentTurnRemapping((ctr) => {
@@ -119,6 +133,7 @@ function App() {
               return copy;
             })
           }}
+          groupAddedTo={groupAddedTo}
           submitGuess={() => {
             let input_0 = currentTurnRemapping[currentTurn.clues[0]]
             let input_1 = currentTurnRemapping[currentTurn.clues[1]]
@@ -126,8 +141,8 @@ function App() {
 
             console.log(input_0, input_1, input_2);
             client.next_turn(input_0, input_1, input_2);
-            // HACK todo do this properly
-            setCurrentTurnCount(currentTurnCount + 1);
+            // HACK we only redraw from this, not great
+            setCurrentTurnRemapping({});
           }}
           />
       </div>
@@ -185,7 +200,12 @@ class Relatable extends Component {
   }
 
   swipingDown = () => {
-    if (this.state.swipeStart == null || this.state.swipeCurrent == null)
+    if ((this.state.swipeStart == null || this.state.swipeCurrent == null))
+    {
+      return 0;
+    }
+
+    if (this.props.groupAddedTo[this.state.currentGroup])
     {
       return 0;
     }
@@ -223,10 +243,10 @@ class Relatable extends Component {
       this.setState({currentGroup: e});
       navigator.vibrate(5);
       }} inertia_k={1.5}>
-      {make_group_container(0, this.props.wordSets[0])}
-      {make_group_container(1, this.props.wordSets[1])}
-      {make_group_container(2, this.props.wordSets[2])}
-      {make_group_container(3, this.props.wordSets[3])}
+      {make_group_container(0, this.props.wordSets[0], this.props.groupAddedTo[0])}
+      {make_group_container(1, this.props.wordSets[1], this.props.groupAddedTo[1])}
+      {make_group_container(2, this.props.wordSets[2], this.props.groupAddedTo[2])}
+      {make_group_container(3, this.props.wordSets[3], this.props.groupAddedTo[3])}
     </WoshCarousel>
     );
 
