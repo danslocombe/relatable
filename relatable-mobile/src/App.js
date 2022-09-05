@@ -52,6 +52,7 @@ const make_group_container = (id, words) => {
 
 function App() {
   let [client, setClient] = useState();
+  let [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
 
   useEffect(() => {
     init().then(() => {
@@ -68,19 +69,54 @@ function App() {
             client_inst.new_game("hello mr wosh");
             client_inst.next_turn_noguess();
             client_inst.next_turn_noguess();
+            client_inst.next_turn_noguess();
             setClient(client_inst);
         });
     })
   }, [])
 
   if (client) {
-    let turns = JSON.parse(client.get_past_turns_json());
-    console.log(turns);
+    let pastTurns = JSON.parse(client.get_past_turns_json());
+    console.log("Rendering..");
+    console.log(pastTurns);
+
+    let clues = [];
+    let wordSets = [[], [], [], []];
+
+    for (let turn of pastTurns) {
+      for (let i in turn.clues) {
+        let groupId = turn.message[i];
+        wordSets[groupId].push(turn.clues[i]);
+      }
+    }
+
+    let currentTurn = JSON.parse(client.get_current_turn_json());
+    for (let clue of currentTurn.clues)
+    {
+      if (currentTurnRemapping[clue] !== undefined) {
+        console.log("Filtering");
+        wordSets[currentTurnRemapping[clue]].push(clue);
+      }
+      else {
+        clues.push(clue);
+      }
+    }
+
+    console.log("clues");
+    console.log(clues);
 
     return (
       <div className="App" style={{}}>
         <h1>Relatable</h1>
-        <Relatable />
+        <Relatable clues={clues} wordSets={wordSets} onAddWord={(clue, remapping) => {
+          console.log("OnAddWord");
+          setCurrentTurnRemapping((ctr) => {
+            let copy = {...ctr};
+            copy[clue] = remapping;
+            console.log(copy);
+            return copy;
+          })
+        }}/>
       </div>
     );
   }
@@ -94,29 +130,12 @@ function App() {
   }
 }
 
-const testWordSets = [
-  ['Easter', 'Carrot', 'Fluff'],
-  ['Hills', 'Milk', 'Fringe'],
-  ['Pink', 'Croissant', 'Ringu'],
-  ['Water', 'Orange', 'Squeeze'],
-];
-
-const testClues = [
-  'Hutch',
-  'Concentrate',
-  //'Blahblahblah',
-  //'Qwerty',
-  //'Typewriter',
-];
-
 class Relatable extends Component {
   constructor(props) {
     super(props);
     this.state = {
       currentClue: 1,
       currentGroup: 1,
-      wordSets: testWordSets,
-      clues: testClues,
 
       swipeStart: null,
       swipeCurrent: null,
@@ -142,6 +161,10 @@ class Relatable extends Component {
   }
 
   handleClueSwipeEnd = (_event) => {
+    if (this.swipingDown() >= 0.9) {
+      this.props.onAddWord(this.props.clues[this.state.currentClue], this.state.currentGroup);
+    }
+
     this.setState({
       swipeStart: null,
       swipeCurrent: null,
@@ -161,7 +184,7 @@ class Relatable extends Component {
   render = () => {
     const swiping_down = this.swipingDown();
 
-    const rendered_clues = this.state.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
+    const rendered_clues = this.props.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
 
     let top = (
       <WoshCarousel onSelectedChange={(e) => {
@@ -177,10 +200,10 @@ class Relatable extends Component {
       this.setState({currentGroup: e});
       navigator.vibrate(5);
       }} inertia_k={1.5}>
-      {make_group_container(0, this.state.wordSets[0])}
-      {make_group_container(1, this.state.wordSets[1])}
-      {make_group_container(2, this.state.wordSets[2])}
-      {make_group_container(3, this.state.wordSets[3])}
+      {make_group_container(0, this.props.wordSets[0])}
+      {make_group_container(1, this.props.wordSets[1])}
+      {make_group_container(2, this.props.wordSets[2])}
+      {make_group_container(3, this.props.wordSets[3])}
     </WoshCarousel>
     );
 
