@@ -52,6 +52,7 @@ const make_group_container = (id, words) => {
 
 function App() {
   let [client, setClient] = useState();
+  let [currentTurnCount, setCurrentTurnCount] = useState(0);
   let [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
 
   useEffect(() => {
@@ -108,15 +109,27 @@ function App() {
     return (
       <div className="App" style={{}}>
         <h1>Relatable</h1>
-        <Relatable clues={clues} wordSets={wordSets} onAddWord={(clue, remapping) => {
-          console.log("OnAddWord");
-          setCurrentTurnRemapping((ctr) => {
-            let copy = {...ctr};
-            copy[clue] = remapping;
-            console.log(copy);
-            return copy;
-          })
-        }}/>
+        <Relatable clues={clues} wordSets={wordSets}
+          onAddWord={(clue, remapping) => {
+            console.log("OnAddWord");
+            setCurrentTurnRemapping((ctr) => {
+              let copy = {...ctr};
+              copy[clue] = remapping;
+              console.log(copy);
+              return copy;
+            })
+          }}
+          submitGuess={() => {
+            let input_0 = currentTurnRemapping[currentTurn.clues[0]]
+            let input_1 = currentTurnRemapping[currentTurn.clues[1]]
+            let input_2 = currentTurnRemapping[currentTurn.clues[2]]
+
+            console.log(input_0, input_1, input_2);
+            client.next_turn(input_0, input_1, input_2);
+            // HACK todo do this properly
+            setCurrentTurnCount(currentTurnCount + 1);
+          }}
+          />
       </div>
     );
   }
@@ -184,16 +197,26 @@ class Relatable extends Component {
   render = () => {
     const swiping_down = this.swipingDown();
 
-    const rendered_clues = this.props.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
+    let top = (<></>);
 
-    let top = (
-      <WoshCarousel onSelectedChange={(e) => {
-        this.setState({currentClue: e});
-        navigator.vibrate(5);
-      }} inertia_k={3} >
-        {rendered_clues}
-    </WoshCarousel>
-    );
+    if (this.props.clues.length > 0)
+    {
+      const rendered_clues = this.props.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
+
+      top = (
+        <WoshCarousel onSelectedChange={(e) => {
+          this.setState({currentClue: e});
+          navigator.vibrate(5);
+        }} inertia_k={3} >
+          {rendered_clues}
+      </WoshCarousel>
+      );
+    }
+    else {
+      top = (
+        <button onClick={this.props.submitGuess}>Submit guess!</button>
+      );
+    }
 
     let bot = (
     <WoshCarousel onSelectedChange={(e) => { 
