@@ -64,17 +64,34 @@ function App() {
         .then(emb_space_arraybuffer => {
             const emb_space_binary = new Uint8Array(emb_space_arraybuffer);
             console.log(`Got embedding space size=${emb_space_binary.length}, initialising client`);
-            setClient(new Client(emb_space_binary));
+            let client_inst = new Client(emb_space_binary)
+            client_inst.new_game("hello mr wosh");
+            client_inst.next_turn_noguess();
+            client_inst.next_turn_noguess();
+            setClient(client_inst);
         });
     })
   }, [])
 
-  return (
-    <div className="App" style={{}}>
-      <h1>Relatable</h1>
-      <Relatable />
-    </div>
-  );
+  if (client) {
+    let turns = JSON.parse(client.get_past_turns_json());
+    console.log(turns);
+
+    return (
+      <div className="App" style={{}}>
+        <h1>Relatable</h1>
+        <Relatable />
+      </div>
+    );
+  }
+  else {
+    return (
+      <div className="App" style={{}}>
+        <h1>Loading...</h1>
+      </div>
+
+    )
+  }
 }
 
 const testWordSets = [
