@@ -49,7 +49,7 @@ const make_group_container = (id, words, lastHighlighted) => {
       renderedWords.push(<p key={i}>{word}</p>);
     }
   }
-  return (<div key={`slide_${id}`} style={{ padding: carousel_padding, height: group_carousel_height, backgroundColor: group_colors[id] }}>
+  return (<div key={`slide_${id}`} style={{ padding: 65, height: group_carousel_height, backgroundColor: group_colors[id] }}>
       Group {id + 1}
       <br/>
       <br/>
@@ -224,12 +224,12 @@ class Relatable extends Component {
       const rendered_clues = this.props.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
 
       top = (
-        <WoshCarousel2 onSelectedChange={(e) => {
+        <WoshCarousel onSelectedChange={(e) => {
           this.setState({currentClue: e});
           navigator.vibrate(5);
         }} inertia_k={3} >
           {rendered_clues}
-      </WoshCarousel2>
+      </WoshCarousel>
       );
     }
     else {
