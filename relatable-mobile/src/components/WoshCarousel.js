@@ -1,14 +1,117 @@
-import { Component, createRef } from 'react';
+import { Component, createRef, useEffect, useRef, useState } from 'react';
+
+const scrollerStyle = {
+  display: "flex",
+  border: "1px solid",
+  width: "320px",
+  overflowX: "auto",
+  overflowY: "hidden",
+  whiteSpace: "nowrap",
+  position: "relative",
+  touchAction: 'none',
+  scrollBehavior: "auto",
+};
+
 
 function dan_lerp(x0, x, k) {
   return (x0 * (k-1) + x) / k;
 }
 
-export default class WoshCarousel extends Component{
+function WoshPhysics(min, max) {
+  const FRIC = 0.98;
+  return {
+    pos : 0,
+    vel : 0,
+    tick: function(target_pos) {
+      console.log(this.vel);
+      if (target_pos !== null) {
+        const new_vel = target_pos - this.pos;
+        this.vel = dan_lerp(this.vel, new_vel, 10);
+        this.pos = target_pos;
+      }
+      else
+      {
+        this.pos += this.vel;
+        this.vel *= FRIC;
+      }
+
+      if (this.pos < min) {
+        this.pos = 0;
+        this.vel = 0.15 * Math.abs(this.vel);
+      }
+    }
+  }
+}
+
+function WoshTouchController(touching, touchStartPos, scrollPosStart, physics) {
+  return {
+    touching : touching,
+    touchStartPos: touchStartPos,
+    scrollPosStart: scrollPosStart,
+    physics : physics,
+    touchStart: function(e) {
+      return WoshTouchController(true, e.touches[0].clientX, physics.pos, physics);
+    },
+    touchEnd: function() {
+      return WoshTouchController(false, 0, 0, physics);
+    },
+    touchMove: function(e) {
+      const delta = e.touches[0].clientX - this.touchStartPos;
+      this.physics.tick(this.scrollPosStart - delta);
+      return WoshTouchController(true, this.touchStartPos, this.scrollPosStart, this.physics);
+    },
+    tick: function() {
+      this.physics.tick(null);
+      return WoshTouchController(this.touching, this.touchStartPos, this.scrollPosStart, this.physics);
+    }
+  }
+}
+
+export function WoshCarousel2({onSelectedChange, inertia_k, children}) {
+  const [getPhysics, setPhysics] = useState(WoshTouchController(false, 0, 0, WoshPhysics(0, 1)));
+  const scroller = useRef();
+
+  const tick = () => {
+    //this.scroller.current.scrollLeft = dan_lerp(this.scroller.current.scrollLeft, this.state.scrollPos, this.props.inertia_k);
+    getPhysics.tick();
+    if (scroller.current)
+    {
+      scroller.current.scrollLeft = dan_lerp(scroller.current.scrollLeft, getPhysics.physics.pos, inertia_k);
+    }
+  };
+
+  useEffect(() => {
+    onSelectedChange(0);
+    const timerID = setInterval(() => tick(), 15);
+    return () => clearInterval(timerID);
+  }, []);
+
+  return (<div style={scrollerStyle} ref={scroller}
+    onTouchStart={(e) => {
+      setPhysics(getPhysics.touchStart(e))
+    }} 
+    onTouchEnd={() => {
+      setPhysics(getPhysics.touchEnd());
+    }}
+    onTouchMove={
+      (e) => {
+        setPhysics(getPhysics.touchMove(e));
+      }
+    }
+    >
+      <div style = {{minWidth:"200px"}}>
+      </div>
+      {children}
+      <div style = {{minWidth:"200px"}}>
+      </div>
+  </div>);
+}
+
+export class WoshCarousel extends Component{
 
   constructor(props) {
     super(props);
-    this.state = { scrollPos: 0, touching:false, touchStart: 0, scrollPosStart : 0, currentSelected: 0 };
+    this.state = { scrollPos: 0, scrollVel: 0, touching:false, touchStart: 0, scrollPosStart : 0, currentSelected: 0 };
     this.scroller = createRef();
   }
 
@@ -102,19 +205,7 @@ export default class WoshCarousel extends Component{
   };
 
   render = () => {
-    const style = {
-      display: "flex",
-      border: "1px solid",
-      width: "320px",
-      overflowX: "auto",
-      overflowY: "hidden",
-      whiteSpace: "nowrap",
-      position: "relative",
-      touchAction: 'none',
-      scrollBehavior: "auto",
-    };
-
-    return (<div style={style} ref={this.scroller}
+    return (<div style={scrollerStyle} ref={this.scroller}
       onTouchStart={(e) => {
         this.setState((state) => ({
           touching: true, 

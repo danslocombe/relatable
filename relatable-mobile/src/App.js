@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import { Component, useEffect, useState } from 'react';
 import React from "react";
-import WoshCarousel from './components/WoshCarousel';
+import {WoshCarousel, WoshCarousel2} from './components/WoshCarousel';
 import init, { Client} from 'vecrypto-web-client'
 
 
@@ -224,12 +224,12 @@ class Relatable extends Component {
       const rendered_clues = this.props.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
 
       top = (
-        <WoshCarousel onSelectedChange={(e) => {
+        <WoshCarousel2 onSelectedChange={(e) => {
           this.setState({currentClue: e});
           navigator.vibrate(5);
         }} inertia_k={3} >
           {rendered_clues}
-      </WoshCarousel>
+      </WoshCarousel2>
       );
     }
     else {
