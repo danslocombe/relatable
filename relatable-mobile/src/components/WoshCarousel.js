@@ -29,9 +29,6 @@ function WoshPhysics(min, max, snaps, onSelectedChange) {
     current_select: 0,
     onSelectedChange: onSelectedChange,
     resetBounds : function(min, max) {
-      //console.log("Resetting bounds")
-      //console.log("Min: " + min);
-      //console.log("Max: " + max);
       this.min = min;
       this.max = max;
       return this;
@@ -41,7 +38,6 @@ function WoshPhysics(min, max, snaps, onSelectedChange) {
       return this;
     },
     tick: function(target_pos) {
-      //console.log(this.vel);
       const pos_0 = this.pos;
       if (target_pos !== null) {
         const new_vel = target_pos - this.pos;
@@ -81,51 +77,91 @@ function WoshPhysics(min, max, snaps, onSelectedChange) {
       }
 
       if (this.pos < this.min) {
-        //console.log("hit min");
         this.pos = this.min;
         this.vel = 0.15 * Math.abs(this.vel);
       }
 
       if (this.pos > this.max) {
-        //console.log("hit max");
         this.pos = this.max;
         this.vel = 0.15 * -Math.abs(this.vel);
       }
+
+      return this;
     }
   }
 }
 
-function WoshTouchController(touching, touchStartPos, scrollPosStart, physics) {
+function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, scrollPosStart, physics}) {
   return {
     touching : touching,
-    touchStartPos: touchStartPos,
+    touch_start_x: touch_start_x,
+    touch_start_y: touch_start_y,
     scrollPosStart: scrollPosStart,
     physics : physics,
+    touch_x : touch_x,
     touchStart: function(e) {
-      return WoshTouchController(true, e.touches[0].clientX, physics.pos, this.physics);
+      this.touch_x = e.touches[0].clientX;
+      //return WoshTouchController(true, this.touch_x, physics.pos, this.physics);
+      return WoshTouchController({
+        ...this,
+        touching: true,
+        touch_start_x: e.touches[0].clientX,
+        touch_start_y: e.touches[0].clientY,
+        scrollPosStart: this.physics.pos,
+        touch_x : e.touches[0].clientX,
+      });
     },
     touchEnd: function() {
-      return WoshTouchController(false, 0, 0, this.physics);
+      return WoshTouchController({
+        ...this,
+        touching: false,
+        touch_start_x: 0,
+        touch_start_y: 0,
+        touch_x : 0,
+      });
     },
     touchMove: function(e) {
-      const delta = e.touches[0].clientX - this.touchStartPos;
-      this.physics.tick(this.scrollPosStart - delta);
-      return WoshTouchController(true, this.touchStartPos, this.scrollPosStart, this.physics);
+      let diff = Math.abs(e.touches[0].clientY - this.touch_start_y);
+      if (diff < 12) {
+        this.touch_x = e.touches[0].clientX;
+      }
+      else {
+        this.touch_x = dan_lerp(this.touch_x, this.touch_start_x, 10);
+      }
+      const delta = this.touch_x - this.touch_start_x;
+      const physics = this.physics.tick(this.scrollPosStart - delta);
+      return WoshTouchController({
+        ...this,
+        touching: true,
+        touch_x: this.touch_x,
+        physics: physics,
+      });
     },
     resetBounds: function(min, max, snaps) {
-      return WoshTouchController(this.touching, this.touchStartPos, this.scrollPosStart, this.physics.resetBounds(min, max).resetSnaps(snaps));
+      return WoshTouchController({
+        ...this,
+        physics: this.physics.resetBounds(min, max).resetSnaps(snaps),
+      });
     },
     tick: function() {
-      this.physics.tick(null);
-      return WoshTouchController(this.touching, this.touchStartPos, this.scrollPosStart, this.physics);
+      return WoshTouchController({
+        ...this,
+        physics: this.physics.tick(null),
+      });
     }
   }
 }
 
 export function WoshCarousel({onSelectedChange, inertia_k, children}) {
-  const [getPhysics, setPhysics] = useState(WoshTouchController(false, 0, 0, WoshPhysics(0, 1, [], (x) => {
+  const [getPhysics, setPhysics] = useState(WoshTouchController({
+      toucing: false,
+      touch_start_x: 0, 
+      touch_start_y: 0,
+      scrollPosStart: 0,
+      touch_x : 0,
+      physics: WoshPhysics(0, 1, [], (x) => {
     onSelectedChange(x);
-  })));
+  })}));
   const scroller = useRef(null);
 
   const tick = () => {
@@ -140,8 +176,6 @@ export function WoshCarousel({onSelectedChange, inertia_k, children}) {
   useEffect(() => {
     if (scroller && scroller.current && scroller.current.children && scroller.current.children.length > 0) {
       let items = scroller.current.children;
-      //console.log("Computing bounds");
-      //console.log(items);
       let WW = 320 / 2;
       let clamp_x_min = items[0].clientWidth - WW;
       let clamp_x_max = -WW;
@@ -160,7 +194,6 @@ export function WoshCarousel({onSelectedChange, inertia_k, children}) {
         //snaps.push(pos - WW);
       }
 
-      //console.log(snaps);
 
       setPhysics(getPhysics.resetBounds(clamp_x_min, clamp_x_max, snaps));
     }
@@ -175,7 +208,6 @@ export function WoshCarousel({onSelectedChange, inertia_k, children}) {
 
   return (<div style={scrollerStyle} ref={scroller}
     onTouchStart={(e) => {
-      //console.log(scroller.current.scrollLeft);
       setPhysics(getPhysics.touchStart(e))
     }} 
     onTouchEnd={() => {
