@@ -80,12 +80,58 @@ function App() {
             setClient(client_inst);
         });
     })
-  }, [])
+  }, []);
 
   if (client) {
+
+    const {clues, wordSets, currentTurn, groupAddedTo} = buildup_turn_state(client, currentTurnRemapping);
+
+    const onAddWord = (clue, remapping) => {
+      console.log("OnAddWord");
+      setCurrentTurnRemapping((ctr) => {
+        let copy = {...ctr};
+        copy[clue] = remapping;
+        console.log(copy);
+        return copy;
+      });
+    }
+
+    const submitGuess = () => {
+      let input_0 = currentTurnRemapping[currentTurn.clues[0]]
+      let input_1 = currentTurnRemapping[currentTurn.clues[1]]
+      let input_2 = currentTurnRemapping[currentTurn.clues[2]]
+
+      console.log(input_0, input_1, input_2);
+      client.next_turn(input_0, input_1, input_2);
+      // HACK we only redraw from this, not great
+      setCurrentTurnRemapping({});
+    }
+
+    return (
+      <div className="App" style={{}}>
+        <h1>Relatable</h1>
+        <Relatable
+          clues={clues}
+          wordSets={wordSets}
+          onAddWord={onAddWord}
+          groupAddedTo={groupAddedTo}
+          submitGuess={submitGuess}
+          />
+      </div>
+    );
+  }
+  else {
+    return (
+      <div className="App" style={{}}>
+        <h1>Loading...</h1>
+      </div>
+
+    )
+  }
+}
+
+function buildup_turn_state(client, currentTurnRemapping) {
     let pastTurns = JSON.parse(client.get_past_turns_json());
-    console.log("Rendering..");
-    console.log(pastTurns);
 
     let clues = [];
     let wordSets = [[], [], [], []];
@@ -101,7 +147,6 @@ function App() {
     for (let clue of currentTurn.clues)
     {
       if (currentTurnRemapping[clue] !== undefined) {
-        console.log("Filtering");
         wordSets[currentTurnRemapping[clue]].push(clue);
       }
       else {
@@ -109,53 +154,18 @@ function App() {
       }
     }
 
-    console.log("clues");
-    console.log(clues);
-
     let groupAddedTo = [false, false, false, false];
     for (let [_clue, mapping] of Object.entries(currentTurnRemapping))
     {
       groupAddedTo[mapping] = true;
     }
 
-    return (
-      <div className="App" style={{}}>
-        <h1>Relatable</h1>
-        <Relatable
-          clues={clues}
-          wordSets={wordSets}
-          onAddWord={(clue, remapping) => {
-            console.log("OnAddWord");
-            setCurrentTurnRemapping((ctr) => {
-              let copy = {...ctr};
-              copy[clue] = remapping;
-              console.log(copy);
-              return copy;
-            })
-          }}
-          groupAddedTo={groupAddedTo}
-          submitGuess={() => {
-            let input_0 = currentTurnRemapping[currentTurn.clues[0]]
-            let input_1 = currentTurnRemapping[currentTurn.clues[1]]
-            let input_2 = currentTurnRemapping[currentTurn.clues[2]]
-
-            console.log(input_0, input_1, input_2);
-            client.next_turn(input_0, input_1, input_2);
-            // HACK we only redraw from this, not great
-            setCurrentTurnRemapping({});
-          }}
-          />
-      </div>
-    );
-  }
-  else {
-    return (
-      <div className="App" style={{}}>
-        <h1>Loading...</h1>
-      </div>
-
-    )
-  }
+    return {
+      clues: clues,
+      wordSets: wordSets,
+      groupAddedTo: groupAddedTo,
+      currentTurn,
+    };
 }
 
 function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets}) {
@@ -164,6 +174,8 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets}) {
 
   const [swipeStart, setSwipeStart] = useState(null);
   const [swipeCurrent, setSwipeCurrent] = useState(null);
+
+  const [replayState, setReplayState] = useState(null);
 
   const handleClueSwipeMove = (event) => {
     if (event.touches.length > 0)
