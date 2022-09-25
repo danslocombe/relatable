@@ -95,7 +95,21 @@ function WoshPhysics(min, max, snaps, should_snap, onSelectedChange) {
   }
 }
 
-function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, scrollPosStart, physics, disallow_drag_down}) {
+export function WoshTouchControllerDefault({onSelectedChange, disallow_drag_down})
+{
+  return WoshTouchController({
+      touching: false,
+      touch_start_x: 0, 
+      touch_start_y: 0,
+      scrollPosStart: 0,
+      touch_x : 0,
+      disallow_drag_down: disallow_drag_down,
+      onSelectedChange: onSelectedChange,
+      physics: WoshPhysics(0, 1, [], true, onSelectedChange),
+    });
+}
+
+export function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, scrollPosStart, physics, disallow_drag_down, onSelectedChange}) {
   return {
     touching : touching,
     touch_start_x: touch_start_x,
@@ -104,6 +118,7 @@ function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, s
     physics : physics,
     touch_x : touch_x,
     disallow_drag_down : disallow_drag_down,
+    onSelectedChange: onSelectedChange,
     touchStart: function(e) {
       this.physics.should_snap = false;
       this.touch_x = e.touches[0].clientX;
@@ -159,24 +174,36 @@ function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, s
   }
 }
 
-export function WoshCarousel({onSelectedChange, inertia_k, children, disallow_drag_down}) {
-  const [getPhysics, setPhysics] = useState(WoshTouchController({
-      toucing: false,
-      touch_start_x: 0, 
-      touch_start_y: 0,
-      scrollPosStart: 0,
-      touch_x : 0,
-      disallow_drag_down: disallow_drag_down,
-      physics: WoshPhysics(0, 1, [], true, (x) => {
-    onSelectedChange(x);
-  })}));
+export function WoshAutoMover({target, physics}) {
+  return {
+    target: target,
+    physics : physics,
+    touchStart: function(e) {},
+    touchEnd: function(e) {},
+    touchMove: function(e) {},
+    resetBounds: function(min, max, snaps) {
+      return WoshAutoMover({
+        ...this,
+        physics: this.physics.resetBounds(min, max).resetSnaps(snaps),
+      })
+    },
+    tick: function() {
+      return WoshAutoMover({
+        ...this,
+        physics: this.physics.tick(null),
+      });
+    }
+  }
+}
+
+export function WoshCarousel({controller, setController, inertia_k, children}) {
   const scroller = useRef(null);
 
   const tick = () => {
-    getPhysics.tick();
+    controller.tick();
     if (scroller.current)
     {
-      scroller.current.scrollLeft = dan_lerp(scroller.current.scrollLeft, getPhysics.physics.pos, inertia_k);
+      scroller.current.scrollLeft = dan_lerp(scroller.current.scrollLeft, controller.physics.pos, inertia_k);
     }
   };
 
@@ -203,27 +230,27 @@ export function WoshCarousel({onSelectedChange, inertia_k, children, disallow_dr
       }
 
 
-      setPhysics(getPhysics.resetBounds(clamp_x_min, clamp_x_max, snaps));
+      setController(controller.resetBounds(clamp_x_min, clamp_x_max, snaps));
     }
   }, [children.length]);
 
   // Setup tick callback.
   useEffect(() => {
-    onSelectedChange(0);
+    controller.onSelectedChange(0);
     const timerID = setInterval(() => tick(), 15);
     return () => clearInterval(timerID);
   }, []);
 
   return (<div style={scrollerStyle} ref={scroller}
     onTouchStart={(e) => {
-      setPhysics(getPhysics.touchStart(e))
+      setController(controller.touchStart(e))
     }} 
     onTouchEnd={() => {
-      setPhysics(getPhysics.touchEnd());
+      setController(controller.touchEnd());
     }}
     onTouchMove={
       (e) => {
-        setPhysics(getPhysics.touchMove(e));
+        setController(controller.touchMove(e));
       }
     }
     >

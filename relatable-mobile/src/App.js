@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import { Component, useEffect, useState } from 'react';
 import React from "react";
-import {WoshCarousel, WoshCarousel2} from './components/WoshCarousel';
+import {WoshCarousel, WoshTouchControllerDefault} from './components/WoshCarousel';
 import init, { Client} from 'vecrypto-web-client'
 
 
@@ -158,115 +158,100 @@ function App() {
   }
 }
 
-class Relatable extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      currentClue: 1,
-      currentGroup: 1,
+function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets}) {
+  const [currentClue, setCurrentClue] = useState(1);
+  const [currentGroup, setCurrentGroup] = useState(1);
 
-      swipeStart: null,
-      swipeCurrent: null,
-    };
-  }
+  const [swipeStart, setSwipeStart] = useState(null);
+  const [swipeCurrent, setSwipeCurrent] = useState(null);
 
-  handleClueSwipeMove = (event) => {
+  const handleClueSwipeMove = (event) => {
     if (event.touches.length > 0)
     {
-      this.setState({
-        swipeCurrent: {y : event.touches[0].screenY},
-      });
+      setSwipeCurrent({y : event.touches[0].screenY});
     }
   }
 
-  handleClueSwipeStart = (event) => {
+  let swiping_down = 0;
+  if ((swipeStart != null && swipeCurrent != null && !(groupAddedTo[currentGroup])))
+  {
+    swiping_down = Math.min(1, Math.max(0, swipeCurrent.y - swipeStart.y - 80) / 50);
+  }
+
+  const handleClueSwipeStart = (event) => {
     if (event.touches.length > 0)
     {
-      this.setState({
-        swipeStart: {y : event.touches[0].screenY},
-      });
+      setSwipeStart({y : event.touches[0].screenY});
     }
   }
 
-  handleClueSwipeEnd = (_event) => {
-    if (this.swipingDown() >= 0.9) {
-      this.props.onAddWord(this.props.clues[this.state.currentClue], this.state.currentGroup);
+  const handleClueSwipeEnd = (_event) => {
+    if (swiping_down >= 0.9) {
+      onAddWord(clues[currentClue], currentGroup);
     }
 
-    this.setState({
-      swipeStart: null,
-      swipeCurrent: null,
-    })
+    setSwipeStart(null);
+    setSwipeCurrent(null);
   }
 
-  swipingDown = () => {
-    if ((this.state.swipeStart == null || this.state.swipeCurrent == null))
-    {
-      return 0;
-    }
-
-    if (this.props.groupAddedTo[this.state.currentGroup])
-    {
-      return 0;
-    }
-
-    let sd = Math.min(1, Math.max(0, this.state.swipeCurrent.y - this.state.swipeStart.y - 80) / 50);
-    return sd
-  }
-
-  render = () => {
-    const swiping_down = this.swipingDown();
-
-    let top = (<></>);
-
-    if (this.props.clues.length > 0)
-    {
-      const rendered_clues = this.props.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
-
-      top = (
-        <WoshCarousel 
-        onSelectedChange={(e) => {
-          this.setState({currentClue: e});
-          navigator.vibrate(5);
-        }}
-        inertia_k={3}
-        disallow_drag_down={true}>
-          {rendered_clues}
-      </WoshCarousel>
-      );
-    }
-    else {
-      top = (
-        <button onClick={this.props.submitGuess}>Submit guess!</button>
-      );
-    }
-
-    let bot = (
-    <WoshCarousel onSelectedChange={(e) => { 
-      this.setState({currentGroup: e});
+  const [getTopController, setTopController] = useState(WoshTouchControllerDefault({
+    onSelectedChange: (i) => {
+      setCurrentClue(i);
       navigator.vibrate(5);
-      }}
-      inertia_k={1.5}
-      disallow_drag_down={false}>
-      {make_group_container(0, this.props.wordSets[0], this.props.groupAddedTo[0])}
-      {make_group_container(1, this.props.wordSets[1], this.props.groupAddedTo[1])}
-      {make_group_container(2, this.props.wordSets[2], this.props.groupAddedTo[2])}
-      {make_group_container(3, this.props.wordSets[3], this.props.groupAddedTo[3])}
+    },
+    disallow_drag_down: true,
+  }));
+
+  const [getBotController, setBotController] = useState(WoshTouchControllerDefault({
+    onSelectedChange: (i) => {
+      setCurrentGroup(i);
+      navigator.vibrate(5);
+    },
+    disallow_drag_down: false,
+  }));
+
+  let top;
+
+  if (clues.length > 0)
+  {
+    const rendered_clues = clues.map((clue, index) => make_clue_container(index, clue, currentClue, currentGroup, swiping_down));
+
+    top = (
+      <WoshCarousel 
+      controller={getTopController}
+      setController={setTopController}
+      inertia_k={3}
+      >
+        {rendered_clues}
     </WoshCarousel>
     );
-
-    return (
-      <div onTouchStart={this.handleClueSwipeStart} onTouchMove={this.handleClueSwipeMove} onTouchEnd={this.handleClueSwipeEnd}>
-        <div style={{height:'150px', display: 'flex', justifyContent: 'center'}}>
-          {top}
-        </div>
-      <h1>↓</h1> 
-        <div style={{height:'400px', display: 'flex', justifyContent: 'center'}}>
-        {bot}
-        </div>
-      </div>
+  }
+  else {
+    top = (
+      <button onClick={submitGuess}>Submit guess!</button>
     );
   }
+
+  return (
+    <div onTouchStart={handleClueSwipeStart} onTouchMove={handleClueSwipeMove} onTouchEnd={handleClueSwipeEnd}>
+      <div style={{height:'150px', display: 'flex', justifyContent: 'center'}}>
+        {top}
+      </div>
+    <h1>↓</h1> 
+      <div style={{height:'400px', display: 'flex', justifyContent: 'center'}}>
+        <WoshCarousel 
+          controller={getBotController}
+          setController={setBotController}
+          inertia_k={1.5}
+          >
+          {make_group_container(0, wordSets[0], groupAddedTo[0])}
+          {make_group_container(1, wordSets[1], groupAddedTo[1])}
+          {make_group_container(2, wordSets[2], groupAddedTo[2])}
+          {make_group_container(3, wordSets[3], groupAddedTo[3])}
+        </WoshCarousel>
+      </div>
+    </div>
+  );
 }
 
 
