@@ -17,7 +17,7 @@ function dan_lerp(x0, x, k) {
   return (x0 * (k-1) + x) / k;
 }
 
-function WoshPhysics(min, max, snaps, onSelectedChange) {
+function WoshPhysics(min, max, snaps, should_snap, onSelectedChange) {
   const FRIC = 0.98;
   const FRIC_SNAP = 0.75;
   return {
@@ -25,6 +25,7 @@ function WoshPhysics(min, max, snaps, onSelectedChange) {
     vel : 0,
     min : min,
     max : max,
+    should_snap : should_snap,
     snaps: snaps,
     current_select: 0,
     onSelectedChange: onSelectedChange,
@@ -49,29 +50,32 @@ function WoshPhysics(min, max, snaps, onSelectedChange) {
         this.pos += this.vel;
         this.vel *= FRIC;
 
-        const center = this.pos + 320/2;
-        let closest_pos = null;
-        let closest_dist = null;
-        let closest_i = null;
-        for (let i = 0; i < this.snaps.length; i++) {
-          const dist_to_snap = Math.abs(center - this.snaps[i]); 
-          if (closest_pos == null || dist_to_snap < closest_dist) {
-            closest_dist = dist_to_snap;
-            closest_pos = this.snaps[i];
-            closest_i = i;
-          }
-        }
-
-        //if (closest_dist < 50)
-        if (closest_dist != null)
+        if (this.should_snap)
         {
-          this.pos = dan_lerp(this.pos, closest_pos - 320/2, 15);
-          this.vel = this.pos - pos_0;
-          this.vel *= FRIC_SNAP;
+          const center = this.pos + 320/2;
+          let closest_pos = null;
+          let closest_dist = null;
+          let closest_i = null;
+          for (let i = 0; i < this.snaps.length; i++) {
+            const dist_to_snap = Math.abs(center - this.snaps[i]); 
+            if (closest_pos == null || dist_to_snap < closest_dist) {
+              closest_dist = dist_to_snap;
+              closest_pos = this.snaps[i];
+              closest_i = i;
+            }
+          }
 
-          if (closest_i != this.current_select) {
-            this.current_select = closest_i;
-            this.onSelectedChange(closest_i);
+          //if (closest_dist < 50)
+          if (closest_dist != null)
+          {
+            this.pos = dan_lerp(this.pos, closest_pos - 320/2, 15);
+            this.vel = this.pos - pos_0;
+            this.vel *= FRIC_SNAP;
+
+            if (closest_i != this.current_select) {
+              this.current_select = closest_i;
+              this.onSelectedChange(closest_i);
+            }
           }
         }
       }
@@ -91,7 +95,7 @@ function WoshPhysics(min, max, snaps, onSelectedChange) {
   }
 }
 
-function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, scrollPosStart, physics}) {
+function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, scrollPosStart, physics, disallow_drag_down}) {
   return {
     touching : touching,
     touch_start_x: touch_start_x,
@@ -99,7 +103,9 @@ function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, s
     scrollPosStart: scrollPosStart,
     physics : physics,
     touch_x : touch_x,
+    disallow_drag_down : disallow_drag_down,
     touchStart: function(e) {
+      this.physics.should_snap = false;
       this.touch_x = e.touches[0].clientX;
       //return WoshTouchController(true, this.touch_x, physics.pos, this.physics);
       return WoshTouchController({
@@ -112,6 +118,7 @@ function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, s
       });
     },
     touchEnd: function() {
+      this.physics.should_snap = true;
       return WoshTouchController({
         ...this,
         touching: false,
@@ -121,8 +128,8 @@ function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, s
       });
     },
     touchMove: function(e) {
-      let diff = Math.abs(e.touches[0].clientY - this.touch_start_y);
-      if (diff < 12) {
+      let diff = e.touches[0].clientY - this.touch_start_y;
+      if (!this.disallow_drag_down || diff < 12) {
         this.touch_x = e.touches[0].clientX;
       }
       else {
@@ -152,14 +159,15 @@ function WoshTouchController({touching, touch_start_x, touch_start_y, touch_x, s
   }
 }
 
-export function WoshCarousel({onSelectedChange, inertia_k, children}) {
+export function WoshCarousel({onSelectedChange, inertia_k, children, disallow_drag_down}) {
   const [getPhysics, setPhysics] = useState(WoshTouchController({
       toucing: false,
       touch_start_x: 0, 
       touch_start_y: 0,
       scrollPosStart: 0,
       touch_x : 0,
-      physics: WoshPhysics(0, 1, [], (x) => {
+      disallow_drag_down: disallow_drag_down,
+      physics: WoshPhysics(0, 1, [], true, (x) => {
     onSelectedChange(x);
   })}));
   const scroller = useRef(null);

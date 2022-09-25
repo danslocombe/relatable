@@ -224,10 +224,13 @@ class Relatable extends Component {
       const rendered_clues = this.props.clues.map((clue, index) => make_clue_container(index, clue, this.state.currentClue, this.state.currentGroup, swiping_down));
 
       top = (
-        <WoshCarousel onSelectedChange={(e) => {
+        <WoshCarousel 
+        onSelectedChange={(e) => {
           this.setState({currentClue: e});
           navigator.vibrate(5);
-        }} inertia_k={3} >
+        }}
+        inertia_k={3}
+        disallow_drag_down={true}>
           {rendered_clues}
       </WoshCarousel>
       );
@@ -242,7 +245,9 @@ class Relatable extends Component {
     <WoshCarousel onSelectedChange={(e) => { 
       this.setState({currentGroup: e});
       navigator.vibrate(5);
-      }} inertia_k={1.5}>
+      }}
+      inertia_k={1.5}
+      disallow_drag_down={false}>
       {make_group_container(0, this.props.wordSets[0], this.props.groupAddedTo[0])}
       {make_group_container(1, this.props.wordSets[1], this.props.groupAddedTo[1])}
       {make_group_container(2, this.props.wordSets[2], this.props.groupAddedTo[2])}
