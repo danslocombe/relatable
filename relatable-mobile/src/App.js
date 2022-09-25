@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import { Component, useEffect, useState } from 'react';
 import React from "react";
-import {WoshCarousel, WoshTouchControllerDefault} from './components/WoshCarousel';
+import {WoshAutoMover, WoshCarousel, WoshTouchController, WoshTouchControllerDefault} from './components/WoshCarousel';
 import init, { Client} from 'vecrypto-web-client'
 
 
@@ -116,6 +116,7 @@ function App() {
           onAddWord={onAddWord}
           groupAddedTo={groupAddedTo}
           submitGuess={submitGuess}
+          replayController={{states: [3, 2, 1]}}
           />
       </div>
     );
@@ -168,14 +169,13 @@ function buildup_turn_state(client, currentTurnRemapping) {
     };
 }
 
-function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets}) {
+function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, replayController}) {
   const [currentClue, setCurrentClue] = useState(1);
   const [currentGroup, setCurrentGroup] = useState(1);
 
   const [swipeStart, setSwipeStart] = useState(null);
   const [swipeCurrent, setSwipeCurrent] = useState(null);
-
-  const [replayState, setReplayState] = useState(null);
+  const [botAutoMoverTarget, setBotAutoMoverTarget] = useState(0);
 
   const handleClueSwipeMove = (event) => {
     if (event.touches.length > 0)
@@ -243,6 +243,22 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets}) {
       <button onClick={submitGuess}>Submit guess!</button>
     );
   }
+
+  useEffect(() => {
+    if (replayController.states.length > 0) {
+      let i = replayController.states[0];
+      let delta = getBotController.physics.snaps[i] - getBotController.physics.snaps[i-1];
+      let target = getBotController.physics.snaps[i-1] + delta / 2;
+
+      setBotController(WoshAutoMover({
+        target: target,
+        physics: getBotController.physics,
+      }));
+    }
+    else {
+      // TODO reset to touch controls
+    }
+  }, [replayController]);
 
   return (
     <div onTouchStart={handleClueSwipeStart} onTouchMove={handleClueSwipeMove} onTouchEnd={handleClueSwipeEnd}>
