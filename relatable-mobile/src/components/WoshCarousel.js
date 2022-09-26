@@ -46,7 +46,7 @@ function WoshPhysics(min, max, snaps, should_snap, onSelectedChange) {
         this.pos = target_pos;
       }
       else if (target_pos_lerp !== null) {
-        this.pos = dan_lerp(this.pos, target_pos_lerp, 30);
+        this.pos = dan_lerp(this.pos, target_pos_lerp, 20);
       }
       else
       {
@@ -181,9 +181,9 @@ export function WoshAutoMover({target, physics}) {
     type: "auto",
     target : target,
     physics : physics,
-    touchStart: function(e) {},
-    touchEnd: function(e) {},
-    touchMove: function(e) {},
+    touchStart: function(e) {return this},
+    touchEnd: function(e) {return this},
+    touchMove: function(e) {return this},
     resetBounds: function(min, max, snaps) {
       return WoshAutoMover({
         ...this,
@@ -242,7 +242,7 @@ export function WoshCarousel({controller, setController, inertia_k, children}) {
     controller.physics.onSelectedChange(0);
     const timerID = setInterval(() => tick(), 15);
     return () => clearInterval(timerID);
-  }, [controller.type]);
+  }, [controller.type, controller.target]);
 
   return (<div style={scrollerStyle} ref={scroller}
     onTouchStart={(e) => {

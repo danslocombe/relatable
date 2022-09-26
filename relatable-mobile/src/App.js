@@ -61,6 +61,9 @@ const make_group_container = (id, words, lastHighlighted) => {
 function App() {
   let [client, setClient] = useState();
   let [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
+
+  const [replayController, setReplayController] = useState(null);
+
   useEffect(() => {
     init().then(() => {
 
@@ -82,21 +85,36 @@ function App() {
     })
   }, []);
 
+  useEffect(() => {
+    if (replayController)
+    {
+      // Hack
+      let timeout = replayController.states.length == 3 ? 10 : 1500;
+
+      const timeout_id = setTimeout(() => {
+        if (replayController.states.length > 0) {
+          let sliced = replayController.states.slice(1);
+          setReplayController({states: sliced});
+        }
+      }, timeout);
+      return () => clearTimeout(timeout_id);
+    }
+  }, [replayController]);
+
   if (client) {
 
     const {clues, wordSets, currentTurn, groupAddedTo} = buildup_turn_state(client, currentTurnRemapping);
 
     const onAddWord = (clue, remapping) => {
-      console.log("OnAddWord");
       setCurrentTurnRemapping((ctr) => {
         let copy = {...ctr};
         copy[clue] = remapping;
-        console.log(copy);
         return copy;
       });
     }
 
     const submitGuess = () => {
+      console.log("Submit guess");
       let input_0 = currentTurnRemapping[currentTurn.clues[0]]
       let input_1 = currentTurnRemapping[currentTurn.clues[1]]
       let input_2 = currentTurnRemapping[currentTurn.clues[2]]
@@ -105,6 +123,8 @@ function App() {
       client.next_turn(input_0, input_1, input_2);
       // HACK we only redraw from this, not great
       setCurrentTurnRemapping({});
+
+      setReplayController({states: [input_0, input_1, input_2]});
     }
 
     return (
@@ -116,7 +136,7 @@ function App() {
           onAddWord={onAddWord}
           groupAddedTo={groupAddedTo}
           submitGuess={submitGuess}
-          replayController={{states: [3, 2, 1]}}
+          replayController={replayController}
           />
       </div>
     );
@@ -175,7 +195,6 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, repla
 
   const [swipeStart, setSwipeStart] = useState(null);
   const [swipeCurrent, setSwipeCurrent] = useState(null);
-  const [botAutoMoverTarget, setBotAutoMoverTarget] = useState(0);
 
   const handleClueSwipeMove = (event) => {
     if (event.touches.length > 0)
@@ -245,10 +264,12 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, repla
   }
 
   useEffect(() => {
-    if (replayController.states.length > 0) {
-      let i = replayController.states[0];
-      let delta = getBotController.physics.snaps[i] - getBotController.physics.snaps[i-1];
-      let target = getBotController.physics.snaps[i-1] + delta / 2;
+    if (replayController && replayController.states.length > 0) {
+      let i = replayController.states[0] - 1;
+      let target_base = getBotController.physics.snaps[i];
+      let target = target_base - 320/2;
+      //let delta = getBotController.physics.snaps[i] - getBotController.physics.snaps[i-1];
+      //let target = getBotController.physics.snaps[i-1] + delta / 2;
 
       setBotController(WoshAutoMover({
         target: target,
