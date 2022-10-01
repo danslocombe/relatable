@@ -5,7 +5,6 @@ import React from "react";
 import {WoshAutoMover, WoshCarousel, WoshTouchController, WoshTouchControllerDefault} from './components/WoshCarousel';
 import init, { Client} from 'vecrypto-web-client'
 
-
 const carousel_padding = 40;
 const group_carousel_height = 450;
 const clue_word_carousel_height = 180;
@@ -38,7 +37,7 @@ const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) =
 );
 }
 
-const make_group_container = (id, words, lastStyling) => {
+const make_group_container = (id, words, lastStyling, actual_word) => {
   let renderedWords = [];
   for (let i in words) {
     let word = words[i];
@@ -60,8 +59,13 @@ const make_group_container = (id, words, lastStyling) => {
       renderedWords.push(<p key={i}>{word}</p>);
     }
   }
+  let header = <>{`Group ${id + 1}`}</>;
+  if (actual_word) {
+    header = <h3>{actual_word}</h3>;
+  }
+
   return (<div key={`slide_${id}`} style={{ padding: 65, height: group_carousel_height, backgroundColor: group_colors[id] }}>
-      Group {id + 1}
+      {header}
       <br/>
       <br/>
 
@@ -148,7 +152,22 @@ function App() {
   }, [replayController]);
 
   if (client) {
+    //if (client.correct_guess_count() == 2) {
     const {clues, wordSets, currentTurn, groupAddedToState} = buildup_turn_state(client, currentTurnRemapping, currentTurnMarking);
+
+    if (client.correct_guess_count() == 2) {
+      let secret_words = JSON.parse(client.get_secret_words());
+      const turn_count = JSON.parse(client.get_past_turns_json()).length;
+
+      return (<div className="App" style={{}}>
+        <h1>Congrats! Won in {turn_count} turns</h1>
+        {make_group_container(0, wordSets[0], null, secret_words[0])}
+        {make_group_container(1, wordSets[1], null, secret_words[1])}
+        {make_group_container(2, wordSets[2], null, secret_words[2])}
+        {make_group_container(3, wordSets[3], null, secret_words[3])}
+        {<button><h3>Play again</h3></button>}
+      </div>);
+    }
 
     const onAddWord = (clue, remapping) => {
       setCurrentTurnRemapping((ctr) => {
@@ -170,7 +189,7 @@ function App() {
 
     return (
       <div className="App" style={{}}>
-        <h1>Relatable</h1>
+        <h1>Correct Guesses ({client.correct_guess_count()}/2)</h1>
         <Relatable
           clues={clues}
           wordSets={wordSets}
