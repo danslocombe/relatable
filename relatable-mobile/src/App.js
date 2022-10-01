@@ -92,7 +92,7 @@ function App() {
             const emb_space_binary = new Uint8Array(emb_space_arraybuffer);
             console.log(`Got embedding space size=${emb_space_binary.length}, initialising client`);
             let client_inst = new Client(emb_space_binary)
-            client_inst.new_game("hello mr wosh");
+            client_inst.new_game(`game_id${Math.random()}`);
             client_inst.next_turn_noguess();
             client_inst.next_turn_noguess();
             client_inst.next_turn_noguess();
