@@ -98,8 +98,13 @@ function WoshPhysics(min, max, snaps, should_snap, onSelectedChange) {
   }
 }
 
-export function WoshTouchControllerDefault({onSelectedChange, disallow_drag_down})
+export function WoshTouchControllerDefault({onSelectedChange, disallow_drag_down, physics})
 {
+  if (!physics)
+  {
+    physics = WoshPhysics(0, 1, [], true, onSelectedChange);
+  }
+
   return WoshTouchController({
       touching: false,
       touch_start_x: 0, 
@@ -107,7 +112,7 @@ export function WoshTouchControllerDefault({onSelectedChange, disallow_drag_down
       scrollPosStart: 0,
       touch_x : 0,
       disallow_drag_down: disallow_drag_down,
-      physics: WoshPhysics(0, 1, [], true, onSelectedChange),
+      physics: physics,
     });
 }
 
@@ -239,7 +244,7 @@ export function WoshCarousel({controller, setController, inertia_k, children}) {
 
   // Setup tick callback.
   useEffect(() => {
-    controller.physics.onSelectedChange(0);
+    //controller.physics.onSelectedChange(0);
     const timerID = setInterval(() => tick(), 15);
     return () => clearInterval(timerID);
   }, [controller.type, controller.target]);

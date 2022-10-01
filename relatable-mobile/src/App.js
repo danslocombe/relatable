@@ -38,12 +38,23 @@ const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) =
 );
 }
 
-const make_group_container = (id, words, lastHighlighted) => {
+const make_group_container = (id, words, lastStyling) => {
   let renderedWords = [];
   for (let i in words) {
     let word = words[i];
-    if (lastHighlighted && (i == words.length - 1)) {
-      renderedWords.push(<p key={i}><b>{word}</b></p>);
+    if (lastStyling && (i == words.length - 1)) {
+      if (lastStyling === "correct")
+      {
+        renderedWords.push(<p key={i}><b>{word} ✅</b></p>);
+      }
+      else if (lastStyling === "wrong")
+      {
+        renderedWords.push(<p key={i}><b>{word} ❌</b></p>);
+      }
+      else
+      {
+        renderedWords.push(<p key={i}><b>{word}</b></p>);
+      }
     }
     else {
       renderedWords.push(<p key={i}>{word}</p>);
@@ -61,6 +72,7 @@ const make_group_container = (id, words, lastHighlighted) => {
 function App() {
   let [client, setClient] = useState();
   let [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
+  let [currentTurnMarking, setCurrentTurnMarking] = useState({});
 
   const [replayController, setReplayController] = useState(null);
 
@@ -85,16 +97,50 @@ function App() {
     })
   }, []);
 
+  const mark_wrong = (clue_id) => {
+    const {currentTurn} = buildup_turn_state(client, currentTurnRemapping, currentTurnMarking);
+    let markingCopy = {...currentTurnMarking};
+    console.log(currentTurn);
+    let clue = currentTurn.clues[clue_id];
+    console.log(`clue_id: ${clue_id} clue: ${clue}`);
+    let guessed_group = currentTurnRemapping[clue];
+    let actual_group = currentTurn.message[clue_id]
+    console.log(`guess: ${guessed_group} actual: ${actual_group}`);
+    const is_correct = guessed_group === actual_group;
+    markingCopy[clue] = is_correct ? "correct" : "wrong";
+    console.log("Marking copy");
+    console.log(markingCopy);
+    setCurrentTurnMarking(markingCopy);
+  };
+
   useEffect(() => {
     if (replayController)
     {
       // Hack
-      let timeout = replayController.states.length == 3 ? 10 : 1500;
+      let timeout = 850;
 
       const timeout_id = setTimeout(() => {
-        if (replayController.states.length > 0) {
+
+        if (replayController.states.length > 1) {
+          console.log("Slicing");
+
           let sliced = replayController.states.slice(1);
+          let i = sliced[0];
+          mark_wrong(3 - sliced.length);
+          console.log(sliced);
           setReplayController({states: sliced});
+        }
+        else {
+          const {currentTurn} = buildup_turn_state(client, currentTurnRemapping, currentTurnMarking);
+          console.log("Proceeding to next turn.");
+          let input_0 = currentTurnRemapping[currentTurn.clues[0]]
+          let input_1 = currentTurnRemapping[currentTurn.clues[1]]
+          let input_2 = currentTurnRemapping[currentTurn.clues[2]]
+
+          console.log(input_0, input_1, input_2);
+          client.next_turn(input_0, input_1, input_2);
+          setCurrentTurnRemapping({});
+          setReplayController(null);
         }
       }, timeout);
       return () => clearTimeout(timeout_id);
@@ -102,8 +148,7 @@ function App() {
   }, [replayController]);
 
   if (client) {
-
-    const {clues, wordSets, currentTurn, groupAddedTo} = buildup_turn_state(client, currentTurnRemapping);
+    const {clues, wordSets, currentTurn, groupAddedToState} = buildup_turn_state(client, currentTurnRemapping, currentTurnMarking);
 
     const onAddWord = (clue, remapping) => {
       setCurrentTurnRemapping((ctr) => {
@@ -115,15 +160,11 @@ function App() {
 
     const submitGuess = () => {
       console.log("Submit guess");
+
       let input_0 = currentTurnRemapping[currentTurn.clues[0]]
       let input_1 = currentTurnRemapping[currentTurn.clues[1]]
       let input_2 = currentTurnRemapping[currentTurn.clues[2]]
-
-      console.log(input_0, input_1, input_2);
-      client.next_turn(input_0, input_1, input_2);
-      // HACK we only redraw from this, not great
-      setCurrentTurnRemapping({});
-
+      mark_wrong(0);
       setReplayController({states: [input_0, input_1, input_2]});
     }
 
@@ -134,7 +175,7 @@ function App() {
           clues={clues}
           wordSets={wordSets}
           onAddWord={onAddWord}
-          groupAddedTo={groupAddedTo}
+          groupAddedToState={groupAddedToState}
           submitGuess={submitGuess}
           replayController={replayController}
           />
@@ -151,7 +192,7 @@ function App() {
   }
 }
 
-function buildup_turn_state(client, currentTurnRemapping) {
+function buildup_turn_state(client, currentTurnRemapping, marking) {
     let pastTurns = JSON.parse(client.get_past_turns_json());
 
     let clues = [];
@@ -175,23 +216,33 @@ function buildup_turn_state(client, currentTurnRemapping) {
       }
     }
 
-    let groupAddedTo = [false, false, false, false];
-    for (let [_clue, mapping] of Object.entries(currentTurnRemapping))
+    let groupAddedToState = [null, null, null, null];
+    for (let [clue, mapping] of Object.entries(currentTurnRemapping))
     {
-      groupAddedTo[mapping] = true;
+      if (marking[clue] === "correct") {
+        groupAddedToState[mapping] = "correct";
+      }
+      else if (marking[clue] === "wrong") {
+        groupAddedToState[mapping] = "wrong";
+      }
+      else {
+        groupAddedToState[mapping] = "unmarked";
+      }
     }
 
     return {
       clues: clues,
       wordSets: wordSets,
-      groupAddedTo: groupAddedTo,
+      groupAddedToState: groupAddedToState,
       currentTurn,
     };
 }
 
-function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, replayController}) {
-  const [currentClue, setCurrentClue] = useState(1);
-  const [currentGroup, setCurrentGroup] = useState(1);
+function Relatable({onAddWord, clues, groupAddedToState, submitGuess, wordSets, replayController}) {
+  //console.log("GATS");
+  //console.log(groupAddedToState);
+  const [currentClue, setCurrentClue] = useState(0);
+  const [currentGroup, setCurrentGroup] = useState(0);
 
   const [swipeStart, setSwipeStart] = useState(null);
   const [swipeCurrent, setSwipeCurrent] = useState(null);
@@ -204,7 +255,7 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, repla
   }
 
   let swiping_down = 0;
-  if ((swipeStart != null && swipeCurrent != null && !(groupAddedTo[currentGroup])))
+  if ((swipeStart != null && swipeCurrent != null && !(groupAddedToState[currentGroup])))
   {
     swiping_down = Math.min(1, Math.max(0, swipeCurrent.y - swipeStart.y - 80) / 50);
   }
@@ -259,13 +310,14 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, repla
   }
   else {
     top = (
-      <button onClick={submitGuess}>Submit guess!</button>
+      <button onClick={(e) => { console.log("Submit click"); submitGuess(e)}}>Submit guess!</button>
     );
   }
 
   useEffect(() => {
     if (replayController && replayController.states.length > 0) {
-      let i = replayController.states[0] - 1;
+      let i = replayController.states[0];// - 1;
+      setCurrentGroup(i);
       let target_base = getBotController.physics.snaps[i];
       let target = target_base - 320/2;
       //let delta = getBotController.physics.snaps[i] - getBotController.physics.snaps[i-1];
@@ -278,6 +330,14 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, repla
     }
     else {
       // TODO reset to touch controls
+      setBotController(WoshTouchControllerDefault({
+        onSelectedChange: (i) => {
+          setCurrentGroup(i);
+          navigator.vibrate(5);
+        },
+        disallow_drag_down: false,
+        physics: getBotController.physics,
+      }))
     }
   }, [replayController]);
 
@@ -293,10 +353,10 @@ function Relatable({onAddWord, clues, groupAddedTo, submitGuess, wordSets, repla
           setController={setBotController}
           inertia_k={1.5}
           >
-          {make_group_container(0, wordSets[0], groupAddedTo[0])}
-          {make_group_container(1, wordSets[1], groupAddedTo[1])}
-          {make_group_container(2, wordSets[2], groupAddedTo[2])}
-          {make_group_container(3, wordSets[3], groupAddedTo[3])}
+          {make_group_container(0, wordSets[0], groupAddedToState[0])}
+          {make_group_container(1, wordSets[1], groupAddedToState[1])}
+          {make_group_container(2, wordSets[2], groupAddedToState[2])}
+          {make_group_container(3, wordSets[3], groupAddedToState[3])}
         </WoshCarousel>
       </div>
     </div>
