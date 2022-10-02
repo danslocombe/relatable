@@ -4,6 +4,7 @@ import { Component, useEffect, useState } from 'react';
 import React from "react";
 import {WoshAutoMover, WoshCarousel, WoshTouchController, WoshTouchControllerDefault} from './components/WoshCarousel';
 import init, { Client} from 'vecrypto-web-client'
+import { init_panic_hook } from 'vecrypto-web-client';
 
 const carousel_padding = 40;
 const group_carousel_height = 450;
@@ -91,11 +92,14 @@ function App() {
         .then(emb_space_arraybuffer => {
             const emb_space_binary = new Uint8Array(emb_space_arraybuffer);
             console.log(`Got embedding space size=${emb_space_binary.length}, initialising client`);
+            init_panic_hook();
             let client_inst = new Client(emb_space_binary)
             client_inst.new_game(`game_id${Math.random()}`);
             client_inst.next_turn_noguess();
             client_inst.next_turn_noguess();
             client_inst.next_turn_noguess();
+            const telemetry_data = client_inst.get_telemetry_data_json();
+            console.log(telemetry_data);
             setClient(client_inst);
         });
     })

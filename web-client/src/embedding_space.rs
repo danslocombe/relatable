@@ -3,12 +3,24 @@ use serde::Serialize;
 const MAGIC:[u8;4] = [0x11, 0x22, 0x33, 0x44];
 const HEADER_SIZE : u64 = 20;
 
+pub trait Space
+{
+    fn all_words(&self) -> &[Word];
+    fn get_vector(&self, word: Word) -> &[f32];
+    fn get_string(&self, word: Word) -> &str;
+}
+
 pub struct EmbeddingSpace
 {
     bytes : Vec<u8>,
     words : Vec<Word>,
     pub size : usize,
     pub dimensions : usize,
+}
+
+fn get_word_string_size_bytes(word : Word, bytes : &[u8]) -> usize {
+    let size_bytes = (&bytes[word.0..word.0 + 4]).try_into().unwrap();
+    u32::from_le_bytes(size_bytes) as usize
 }
 
 impl EmbeddingSpace
@@ -25,7 +37,7 @@ impl EmbeddingSpace
         for _ in 0..size
         {
             let word = Word(offset);
-            offset += (4 + word.get_string_size_bytes(&bytes) + 4 * dimensions);
+            offset += (4 + get_word_string_size_bytes(word, &bytes) + 4 * dimensions);
             words.push(word);
         }
 
@@ -34,9 +46,35 @@ impl EmbeddingSpace
         }
     }
 
-    pub fn all_words(&self) -> &[Word]
+    fn get_vector_offset(&self, word : Word) -> usize
+    {
+        word.0 + 4 + get_word_string_size_bytes(word, &self.bytes)
+    }
+
+}
+
+impl Space for EmbeddingSpace
+{
+    fn all_words(&self) -> &[Word]
     {
         &self.words
+    }
+
+    fn get_string(&self, word : Word) -> &str
+    {
+        let string_start = word.0+4;
+        let string_size = get_word_string_size_bytes(word, &self.bytes);
+        let string_bytes = &self.bytes[string_start..string_start+string_size];
+        // We know the binary is generated with valid utf8 strings
+        unsafe { std::str::from_utf8_unchecked(string_bytes) }
+    }
+
+    fn get_vector(&self, word : Word) -> &[f32]
+    {
+        let offset = self.get_vector_offset(word);
+        let bytes = &self.bytes[offset..offset + 4 * self.dimensions];
+        let vector = unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const f32, self.dimensions) };
+        vector
     }
 }
 
@@ -45,46 +83,9 @@ pub struct Word(pub usize);
 
 impl Word
 {
-    pub fn get_string_size(&self, embedding_space : &EmbeddingSpace) -> usize
-    {
-        self.get_string_size_bytes(&embedding_space.bytes)
+    pub fn similarity<T : Space>(self, other : Self, embedding_space : &T) -> f32 {
+        similarity(embedding_space.get_vector(self), embedding_space.get_vector(other))
     }
-
-    fn get_string_size_bytes(&self, bytes: &[u8]) -> usize
-    {
-        let size_bytes = (&bytes[self.0..self.0 + 4]).try_into().unwrap();
-        u32::from_le_bytes(size_bytes) as usize
-    }
-
-    fn get_vector_offset(&self, embedding_space : &EmbeddingSpace) -> usize
-    {
-        self.0 + 4 + self.get_string_size(embedding_space)
-    }
-
-    pub fn similarity(&self, other : &Self, embedding_space : &EmbeddingSpace) -> f32 {
-        similarity(self.get_vector(embedding_space), other.get_vector(embedding_space))
-    }
-}
-
-impl<'a> Word
-{
-    pub fn get_string(&self, embedding_space : &'a EmbeddingSpace) -> &'a str
-    {
-        let string_start = self.0+4;
-        let string_size = self.get_string_size(embedding_space);
-        let string_bytes = &embedding_space.bytes[string_start..string_start+string_size];
-        // We know the binary is generated with valid utf8 strings
-        unsafe { std::str::from_utf8_unchecked(string_bytes) }
-    }
-
-    pub fn get_vector(&self, embedding_space : &'a EmbeddingSpace) -> &'a [f32]
-    {
-        let offset = self.get_vector_offset(embedding_space);
-        let bytes = &embedding_space.bytes[offset..offset + 4 * embedding_space.dimensions];
-        let vector = unsafe { std::slice::from_raw_parts(bytes.as_ptr() as *const f32, embedding_space.dimensions) };
-        vector
-    }
-
 }
 
 fn norm(v: &[f32]) -> Vec<f32>

@@ -9,8 +9,11 @@ macro_rules! log {
 mod embedding_space;
 mod message;
 mod game;
+mod telemetry;
 
 use wasm_bindgen::prelude::*;
+
+use embedding_space::Space;
 
 #[wasm_bindgen]
 pub fn init_panic_hook() {
@@ -71,7 +74,12 @@ impl Client {
 
     pub fn get_secret_words(&self) -> String {
         let hidden_words = &self.game.as_ref().unwrap().hidden_words;
-        let hidden = hidden_words.iter().map(|x| x.get_string(&self.embedding_space)).collect::<Vec<_>>();
+        let hidden = hidden_words.iter().map(|x| self.embedding_space.get_string(*x)).collect::<Vec<_>>();
         serde_json::to_string(&hidden).unwrap()
+    }
+
+    pub fn get_telemetry_data_json(&self) -> String {
+        let telemetry = self.game.as_ref().unwrap().get_telemetry_data(&self.embedding_space);
+        serde_json::to_string(&telemetry).unwrap()
     }
 }
