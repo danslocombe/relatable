@@ -13,6 +13,7 @@ pub struct Game {
     pub current_turn : Option<Turn>,
     rng : froggy_rand::FroggyRand,
 
+    reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word : bool,
     //turn_gen_offset_max : usize,
     //turn_gen_offset_min : usize,
     //turn_gen_offset_iters : usize,
@@ -69,6 +70,7 @@ impl Game {
             past_turns : Default::default(),
             current_turn : Default::default(),
             rng,
+            reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word : true,
         }
     }
 
@@ -82,6 +84,7 @@ impl Game {
             past_turns : Default::default(),
             current_turn : Default::default(),
             rng,
+            reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word : false,
         }
     }
 
@@ -101,7 +104,13 @@ impl Game {
         total_dist
     }
 
-    fn word_used(&self, word : Word) -> bool {
+    fn word_used(&self, word : Word, other_clues : &[Word]) -> bool {
+        for &other in other_clues {
+            if (word == other) {
+                return true;
+            }
+        }
+
         for &hidden in &self.hidden_words {
             if (word == hidden) {
                 return true;
@@ -127,11 +136,11 @@ impl Game {
         return false;
     }
 
-    fn get_clue<T: Space>(&self, rng : FroggyRand, id : u8, embedding_space : &T) -> Word 
+    fn get_clue<T: Space>(&self, rng : FroggyRand, id : u8, embedding_space : &T, other_clues : &[Word]) -> Word 
     {
         let hidden_word = self.hidden_words[id as usize];
         //log!("get_clue for hidden word '{}'", hidden_word);
-        let best = score_words(id as usize, &self.hidden_words, embedding_space);
+        let best = score_words(id as usize, &self.hidden_words, embedding_space, self.reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word);
 
         let mut i = 0;
         loop {
@@ -148,7 +157,7 @@ impl Game {
                 continue;
             }
 
-            if (!self.word_used(chosen))
+            if (!self.word_used(chosen, other_clues))
             {
                 return chosen;
             }
@@ -159,9 +168,14 @@ impl Game {
         let message = self.deck.next()?;
         let ordering = message.to_ordering();
 
-        let clues_words : [Word; 3] = ordering.iter().map(|id| {
-            self.get_clue(rng.subrand(*id), *id, embedding_space)
-        }).collect::<Vec<_>>().try_into().unwrap();
+        let mut clues_words_vec = Vec::with_capacity(3);
+
+        for id in ordering.iter() {
+            let clue = self.get_clue(rng.subrand(("get_clue", *id)), *id, embedding_space, &clues_words_vec);
+            clues_words_vec.push(clue);
+        }
+
+        let clues_words : [Word; 3] = clues_words_vec.try_into().unwrap();
 
         let clues : [String; 3] = clues_words.iter().map(|word| embedding_space.get_string(*word).to_owned()).collect::<Vec<_>>().try_into().unwrap();
 
@@ -213,31 +227,16 @@ impl Game {
         words
     }
 
-    fn get_distance_info_to_group<T: Space>(&self, word : Word, group_id: usize, turn_id : usize, embedding_space: &T) -> crate::telemetry::DistanceInfo
+    fn get_distance_info_to_group<T: Space>(&self, word : Word, group_id: usize, turn_id : usize, embedding_space: &T) -> Option<crate::telemetry::DistanceInfo>
     {
         let words = self.all_clues_in_group(group_id, turn_id);
+        if (words.len() == 0)
+        {
+            return None;
+        }
+
         let mut distances : Vec<_> = words.into_iter().map(|x| word.similarity(x, embedding_space)).collect();
-
-        distances.sort_by(|x, y| x.total_cmp(&y));
-
-        let median = distances[distances.len() / 2];
-
-        let min = *distances.iter().min_by(|x, y| x.total_cmp(&y)).unwrap();
-        let max = *distances.iter().max_by(|x, y| x.total_cmp(&y)).unwrap();
-
-        let mut mean = 0.0;
-        for dist in &distances {
-            mean += dist;
-        }
-
-        mean /= distances.len() as f32;
-
-        DistanceInfo {
-            min,
-            max,
-            mean,
-            median,
-        }
+        Some(DistanceInfo::from_distances(distances))
     }
 
     pub fn get_telemetry_data<T: Space>(&self, embedding_space: &T) -> crate::telemetry::TelemetryData {
@@ -279,9 +278,19 @@ impl Game {
                     ))
                 }
 
+                let group = turn.message.to_ordering()[i] as usize;
+                let hidden_word = self.hidden_words[group];
+                let distance_to_hidden_word = clue_word.similarity(hidden_word, embedding_space);
+
+                let distances = self.hidden_words.iter().enumerate().filter(|(i, _)| *i != group).map(|(_, x)| clue_word.similarity(*x, embedding_space)).collect::<Vec<_>>();
+                let distance_to_other_hidden_words = DistanceInfo::from_distances(distances);
 
                 turn_telemetry.clues.push(ClueTelemetry {
                     word: turn.clues[i].clone(),
+
+                    distance_to_hidden_word,
+                    distance_to_other_hidden_words,
+
                     correctness,
                     correct_distance_info,
                     incorrect_distance_info,
@@ -296,7 +305,7 @@ impl Game {
     }
 }
 
-fn score_words<T : Space>(target_word_id : usize, hidden_words : &[Word], embedding_space : &T) -> Vec<(Word, f32)>
+fn score_words<T : Space>(target_word_id : usize, hidden_words : &[Word], embedding_space : &T, reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word : bool) -> Vec<(Word, f32)>
 {
     let words = embedding_space.all_words();
 
@@ -309,23 +318,26 @@ fn score_words<T : Space>(target_word_id : usize, hidden_words : &[Word], embedd
             continue;
         }
 
-        let mut most_similar = None;
-        for hidden_word in hidden_words {
-            let similarity = word.similarity(*hidden_word, embedding_space);
-            if let Some((_most_similar_word, most_similar_score)) = most_similar {
-                if (similarity > most_similar_score) {
+        if (reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word)
+        {
+            let mut most_similar = None;
+            for hidden_word in hidden_words {
+                let similarity = word.similarity(*hidden_word, embedding_space);
+                if let Some((_most_similar_word, most_similar_score)) = most_similar {
+                    if (similarity > most_similar_score) {
+                        most_similar = Some((hidden_word, similarity));
+                    }
+                }
+                else {
                     most_similar = Some((hidden_word, similarity));
                 }
             }
-            else {
-                most_similar = Some((hidden_word, similarity));
-            }
-        }
 
-        if (*most_similar.unwrap().0 != target_word)
-        {
-            // Closest to a word not the target word
-            continue;
+            if (*most_similar.unwrap().0 != target_word)
+            {
+                // Closest to a word not the target word
+                continue;
+            }
         }
 
         let mut score = 0.;
@@ -431,10 +443,10 @@ mod tests {
                     Word(19),
                 ],
                 vectors: vec![
-                    vec![0.0, 0.1],
-                    vec![0.0, 0.5],
-                    vec![0.0, 0.4],
-                    vec![0.0, 1.0],
+                    vec![0.1, 0.1],
+                    vec![0.1, 0.5],
+                    vec![0.1, 0.4],
+                    vec![0.1, 1.0],
 
                     vec![1.0, 0.1],
                     vec![1.0, 0.5],
@@ -516,11 +528,16 @@ mod tests {
     {
         let space = TestSpace::new();
         let mut game = Game::new_with_words("seed", [Word(0), Word(1), Word(2), Word(3)], &space);
+        println!("{:#?}", game);
         game.next_turn(None, &space);
+        println!("{:#?}", game);
         game.next_turn(None, &space);
+        println!("{:#?}", game);
+        game.next_turn(None, &space);
+        println!("{:#?}", game);
 
         let telemetry_data = game.get_telemetry_data(&space);
-        println!("{:?}", telemetry_data);
+        println!("{:#?}", telemetry_data);
         assert_eq!(telemetry_data.turns.len(), 0);
     }
 }
