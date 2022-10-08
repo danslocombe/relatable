@@ -37,6 +37,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "core"
+version = "0.1.0"
+dependencies = [
+ "froggy-rand",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "deterministic-hash"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -225,6 +234,7 @@ name = "vecrypto-web-client"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "core",
  "froggy-rand",
  "futures",
  "js-sys",

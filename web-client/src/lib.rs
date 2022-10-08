@@ -6,14 +6,10 @@ macro_rules! log {
     }
 }
 
-mod embedding_space;
-mod message;
-mod game;
-mod telemetry;
-
 use wasm_bindgen::prelude::*;
 
-use embedding_space::Space;
+use core::*;
+use core::embedding_space::Space;
 
 #[wasm_bindgen]
 pub fn init_panic_hook() {
