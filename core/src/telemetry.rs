@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DistanceInfo
 {
     pub min : f32,
@@ -35,7 +35,7 @@ impl DistanceInfo
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ClueTelemetry
 {
     pub word : String,
@@ -48,20 +48,20 @@ pub struct ClueTelemetry
     pub correctness : CorrectState,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum CorrectState {
     NotGuessed,
     Correct,
     Incorrect,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TurnTelemetry
 {
     pub clues : Vec<ClueTelemetry>,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TelemetryData
 {
     pub hidden_words : Vec<String>,
