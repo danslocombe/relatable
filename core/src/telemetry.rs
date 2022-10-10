@@ -1,16 +1,14 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DistanceInfo
-{
-    pub min : f32,
-    pub max : f32,
-    pub mean : f32,
-    pub median : f32,
+pub struct DistanceInfo {
+    pub min: f32,
+    pub max: f32,
+    pub mean: f32,
+    pub median: f32,
 }
 
-impl DistanceInfo
-{
+impl DistanceInfo {
     pub fn from_distances(mut distances: Vec<f32>) -> Self {
         distances.sort_by(|x, y| x.total_cmp(&y));
 
@@ -36,16 +34,17 @@ impl DistanceInfo
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ClueTelemetry
-{
-    pub word : String,
+pub struct ClueTelemetry {
+    pub word: String,
 
-    pub distance_to_hidden_word : f32,
-    pub distance_to_other_hidden_words : DistanceInfo,
+    pub distance_to_hidden_word: f32,
+    pub distance_to_other_hidden_words: DistanceInfo,
 
-    pub correct_distance_info : Option<DistanceInfo>,
-    pub incorrect_distance_info : Vec<Option<DistanceInfo>>,
-    pub correctness : CorrectState,
+    //pub good_distances: DistanceInfo,
+    //pub bad_distances: DistanceInfo,
+    pub correct_distance_info: Option<DistanceInfo>,
+    pub incorrect_distance_info: Vec<Option<DistanceInfo>>,
+    pub correctness: CorrectState,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,16 +55,29 @@ pub enum CorrectState {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct TurnTelemetry
-{
-    pub clues : Vec<ClueTelemetry>,
+pub struct TurnTelemetry {
+    pub clues: Vec<ClueTelemetry>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct TelemetryData
-{
-    pub hidden_words : Vec<String>,
-    pub turns : Vec<TurnTelemetry>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TelemetryData {
+    pub version: u32,
+    pub seed: String,
+
+    pub hidden_words: Vec<String>,
+    pub turns: Vec<TurnTelemetry>,
+}
+
+impl TelemetryData {
+    pub fn empty(seed: &str) -> Self {
+        Self {
+            version: 1,
+            seed: seed.to_owned(),
+
+            hidden_words: Vec::new(),
+            turns: Vec::new(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -73,11 +85,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn distance_info_single()
-    {
-        let ds = vec![
-            0.5,
-        ];
+    fn distance_info_single() {
+        let ds = vec![0.5];
 
         let info = DistanceInfo::from_distances(ds);
         assert_eq!(info.min, 0.5);
@@ -87,13 +96,8 @@ mod tests {
     }
 
     #[test]
-    fn distance_info_multiple()
-    {
-        let ds = vec![
-            0.0,
-            0.5,
-            1.0,
-        ];
+    fn distance_info_multiple() {
+        let ds = vec![0.0, 0.5, 1.0];
 
         let info = DistanceInfo::from_distances(ds);
         assert_eq!(info.min, 0.0);
@@ -103,13 +107,8 @@ mod tests {
     }
 
     #[test]
-    fn distance_info_multiple_2()
-    {
-        let ds = vec![
-            0.0,
-            0.75,
-            1.0,
-        ];
+    fn distance_info_multiple_2() {
+        let ds = vec![0.0, 0.75, 1.0];
 
         let info = DistanceInfo::from_distances(ds);
         assert_eq!(info.min, 0.0);

@@ -5,6 +5,7 @@ import React from "react";
 import {WoshAutoMover, WoshCarousel, WoshTouchController, WoshTouchControllerDefault} from './components/WoshCarousel';
 import init, { Client} from 'vecrypto-web-client'
 import { init_panic_hook } from 'vecrypto-web-client';
+import { FeedbackForm } from './components/Feedback.js'
 
 const carousel_padding = 40;
 const group_carousel_height = 450;
@@ -159,6 +160,7 @@ function App() {
     //if (client.correct_guess_count() == 2) {
     const {clues, wordSets, currentTurn, groupAddedToState} = buildup_turn_state(client, currentTurnRemapping, currentTurnMarking);
 
+    //if (true) {
     if (client.correct_guess_count() == 2) {
       let secret_words = JSON.parse(client.get_secret_words());
       const turn_count = JSON.parse(client.get_past_turns_json()).length;
@@ -170,6 +172,8 @@ function App() {
         {make_group_container(2, wordSets[2], null, secret_words[2])}
         {make_group_container(3, wordSets[3], null, secret_words[3])}
         {<button><h3>Play again</h3></button>}
+        <FeedbackForm client={client} />
+        <hr/>
       </div>);
     }
 
