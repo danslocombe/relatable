@@ -63,6 +63,13 @@ impl Client {
             .next_turn(None, &self.embedding_space);
     }
 
+    pub fn get_seed(&self) -> String {
+        self.game
+            .as_ref()
+            .map(|x| x.seed.clone())
+            .unwrap_or_default()
+    }
+
     pub fn get_current_turn_json(&self) -> String {
         let current_turn = self.game.as_ref().unwrap().current_turn.as_ref().unwrap();
         serde_json::to_string(current_turn).unwrap()

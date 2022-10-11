@@ -7,7 +7,7 @@ use crate::telemetry::{ClueTelemetry, CorrectState, DistanceInfo};
 
 #[derive(Debug)]
 pub struct Game {
-    seed: String,
+    pub seed: String,
 
     pub hidden_words: [Word; 4],
     pub deck: Deck,

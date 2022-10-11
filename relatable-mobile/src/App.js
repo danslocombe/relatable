@@ -75,6 +75,13 @@ const make_group_container = (id, words, lastStyling, actual_word) => {
   </div>);
 };
 
+function setup_new_game(client_inst) {
+  client_inst.new_game(`game_id${Math.random()}`);
+  client_inst.next_turn_noguess();
+  client_inst.next_turn_noguess();
+  client_inst.next_turn_noguess();
+}
+
 function App() {
   let [client, setClient] = useState();
   let [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
@@ -95,12 +102,7 @@ function App() {
             console.log(`Got embedding space size=${emb_space_binary.length}, initialising client`);
             init_panic_hook();
             let client_inst = new Client(emb_space_binary)
-            client_inst.new_game(`game_id${Math.random()}`);
-            client_inst.next_turn_noguess();
-            client_inst.next_turn_noguess();
-            client_inst.next_turn_noguess();
-            const telemetry_data = client_inst.get_telemetry_data_json();
-            console.log(telemetry_data);
+            setup_new_game(client_inst);
             setClient(client_inst);
         });
     })
@@ -164,6 +166,16 @@ function App() {
     if (client.correct_guess_count() == 2) {
       let secret_words = JSON.parse(client.get_secret_words());
       const turn_count = JSON.parse(client.get_past_turns_json()).length;
+      
+      const reset = () => {
+        setClient((c) => {
+          setup_new_game(c);
+          return c;
+        });
+        setCurrentTurnRemapping({});
+        setCurrentTurnMarking({});
+        setReplayController(null);
+      };
 
       return (<div className="App" style={{}}>
         <h1>Congrats! Won in {turn_count} turns</h1>
@@ -171,7 +183,9 @@ function App() {
         {make_group_container(1, wordSets[1], null, secret_words[1])}
         {make_group_container(2, wordSets[2], null, secret_words[2])}
         {make_group_container(3, wordSets[3], null, secret_words[3])}
-        {<button><h3>Play again</h3></button>}
+        <button onClick={(e) => reset()}>
+          <h3>Play again</h3>
+        </button>
         <FeedbackForm client={client} />
         <hr/>
       </div>);

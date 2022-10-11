@@ -1,11 +1,18 @@
 import ReactStars from "react-rating-stars-component"
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export function FeedbackForm({client}) {
   const name = useRef(null);
   const notes = useRef(null);
   const [fun, setFun] = useState(0);
   const [difficulty, setDifficulty] = useState(0);
+  
+  const [sentTelemetry, setSentTelemetry] = useState(false);
+  
+  useEffect(() => {
+    setSentTelemetry(false);
+  }, [client.get_seed()]);
+  
 
   const submit = () => {
     console.log("Hello");
@@ -27,6 +34,9 @@ export function FeedbackForm({client}) {
     });
  }
     
+  if (sentTelemetry) {
+    return <h4>Feedback sent!</h4>;
+  }
   return <>
    <h4>Your Name</h4>
    <input ref={name}></input>
@@ -36,6 +46,11 @@ export function FeedbackForm({client}) {
    <h4>Notes</h4>
    <input ref={notes}></input>
    <br />
-   <button onClick={(e) => submit()}><h4>Submit feedback</h4> </button>
+   <button onClick={(e) => {
+      setSentTelemetry(true);
+      submit();
+   }}>
+     <h4>Submit feedback</h4>
+   </button>
   </>
 }
