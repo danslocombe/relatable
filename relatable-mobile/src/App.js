@@ -184,6 +184,22 @@ function App() {
         return copy;
       });
     }
+    
+    const onRemoveWord = (mapping) => {
+      setCurrentTurnRemapping((ctr) => {
+        let copy = {};
+        for (const [key, value] of Object.entries(ctr)) {
+          if (value === mapping) {
+            continue;
+          }
+          
+          copy[key] = value;
+        }
+        
+        return copy;
+      });
+      
+    }
 
     const submitGuess = () => {
       console.log("Submit guess");
@@ -202,6 +218,7 @@ function App() {
           clues={clues}
           wordSets={wordSets}
           onAddWord={onAddWord}
+          onRemoveWord={onRemoveWord}
           groupAddedToState={groupAddedToState}
           submitGuess={submitGuess}
           replayController={replayController}
@@ -265,7 +282,7 @@ function buildup_turn_state(client, currentTurnRemapping, marking) {
     };
 }
 
-function Relatable({onAddWord, clues, groupAddedToState, submitGuess, wordSets, replayController}) {
+function Relatable({clues, groupAddedToState, submitGuess, wordSets, replayController, onAddWord, onRemoveWord}) {
   //console.log("GATS");
   //console.log(groupAddedToState);
   const [currentClue, setCurrentClue] = useState(0);
@@ -285,6 +302,14 @@ function Relatable({onAddWord, clues, groupAddedToState, submitGuess, wordSets, 
   if ((swipeStart != null && swipeCurrent != null && !(groupAddedToState[currentGroup])))
   {
     swiping_down = Math.min(1, Math.max(0, swipeCurrent.y - swipeStart.y - 80) / 50);
+    //console.log("swiping_down: " + swiping_down);
+  }
+  
+  let swiping_up = 0;
+  if ((swipeStart != null && swipeCurrent != null && groupAddedToState[currentGroup]))
+  {
+    swiping_up = Math.min(1, Math.max(0, swipeStart.y - swipeCurrent.y - 80) / 50);
+    //console.log("swiping_up: " + swiping_up);
   }
 
   const handleClueSwipeStart = (event) => {
@@ -297,6 +322,10 @@ function Relatable({onAddWord, clues, groupAddedToState, submitGuess, wordSets, 
   const handleClueSwipeEnd = (_event) => {
     if (swiping_down >= 0.9) {
       onAddWord(clues[currentClue], currentGroup);
+    }
+    
+    else if (swiping_up >= 0.9) {
+      onRemoveWord(currentGroup);
     }
 
     setSwipeStart(null);
