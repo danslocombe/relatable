@@ -1,6 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
 import { Component, useEffect, useState } from 'react';
+import Modal from 'react-modal';
 import React from "react";
 import {WoshAutoMover, WoshCarousel, WoshTouchController, WoshTouchControllerDefault} from './components/WoshCarousel';
 import init, { Client} from 'vecrypto-web-client'
@@ -17,6 +18,23 @@ const group_colors = [
   'rgb(252, 221, 255)',
   'rgb(255, 255, 207)',
 ];
+
+const modalStyles = {
+  content: {
+    top: "40%",
+    left: "42%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)",
+    width: "65%",
+    height: "60%",
+    borderRadius: 0,
+    border: `2px solid black`,
+  },
+  overlay: { zIndex: 10, backgroundColor: "rgba(0,0,0,0.8)" },
+   
+}
 
 const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) => {
   const style = { padding: carousel_padding, height: clue_word_carousel_height, display: 'flex', justifyContent: 'center', alignItems: 'center'};
@@ -83,9 +101,10 @@ function setup_new_game(client_inst) {
 }
 
 function App() {
-  let [client, setClient] = useState();
-  let [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
-  let [currentTurnMarking, setCurrentTurnMarking] = useState({});
+  const [client, setClient] = useState();
+  const [currentTurnRemapping, setCurrentTurnRemapping] = useState({});
+  const [currentTurnMarking, setCurrentTurnMarking] = useState({});
+  const [showModal, setShowModal] = useState(true);
 
   const [replayController, setReplayController] = useState(null);
 
@@ -224,9 +243,27 @@ function App() {
       mark_wrong(0);
       setReplayController({states: [input_0, input_1, input_2]});
     }
+    
+    let modal = <></>
+    const closeModal = () => setShowModal(false);
+    if (showModal) {
+        modal = <Modal
+          isOpen={true}
+          onRequestClose={closeModal}
+          style={modalStyles}
+          contentLabel="Example Modal"
+          ariaHideApp={false}
+        >
+          <h1> Relatable </h1>
+          <p>Relatable is a game about grouping words.</p>
+          <p>The game starts with the computer picking four hidden words. Then every round you are give three clue words. You must guess which of the hidden words they are refering to, using only the previous clues as hints!</p>
+          <button onClick={closeModal}>Play!</button>
+        </Modal>
+    }
 
     return (
       <div className="App" style={{}}>
+        {modal}
         <h1>Correct Guesses ({client.correct_guess_count()}/2)</h1>
         <Relatable
           clues={clues}
