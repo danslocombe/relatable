@@ -4,7 +4,7 @@ const scrollerStyle = {
   display: "flex",
   border: "1px solid",
   width: "320px",
-  overflowX: "auto",
+  overflowX: "hidden",
   overflowY: "hidden",
   whiteSpace: "nowrap",
   position: "relative",

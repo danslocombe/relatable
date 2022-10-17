@@ -37,7 +37,17 @@ const modalStyles = {
 }
 
 const make_clue_container = (id, clue, currentClue, currentGroup, swipingDown) => {
-  const style = { padding: carousel_padding, height: clue_word_carousel_height, display: 'flex', justifyContent: 'center', alignItems: 'center'};
+  const style = {
+    //padding: "10%",
+    //padding: "15px",
+    padding: carousel_padding,
+    //paddingBottom: "50%",
+    //height: clue_word_carousel_height,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  };
+  
   let rectStyle = {};
 
   if (swipingDown > 0.1 && id === currentClue)
@@ -450,7 +460,7 @@ function Relatable({clues, groupAddedToState, submitGuess, wordSets, replayContr
 
   return (
     <div onTouchStart={handleClueSwipeStart} onTouchMove={handleClueSwipeMove} onTouchEnd={handleClueSwipeEnd}>
-      <div style={{height:'150px', display: 'flex', justifyContent: 'center'}}>
+      <div style={{height:'90px', display: 'flex', justifyContent: 'center'}}>
         {top}
       </div>
     <h1>↓</h1> 

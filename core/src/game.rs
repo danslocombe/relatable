@@ -5,6 +5,19 @@ use crate::embedding_space::{EmbeddingSpace, Space, Word};
 use crate::message::{Deck, Message};
 use crate::telemetry::{ClueTelemetry, CorrectState, DistanceInfo};
 
+#[derive(Debug, Clone)]
+pub struct GameConfig {
+    pub reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word: bool,
+}
+
+impl Default for GameConfig {
+    fn default() -> Self {
+        Self {
+            reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word: false,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Game {
     pub seed: String,
@@ -14,11 +27,10 @@ pub struct Game {
     pub past_turns: Vec<Turn>,
     pub current_turn: Option<Turn>,
     rng: froggy_rand::FroggyRand,
-
-    reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word: bool,
     //turn_gen_offset_max : usize,
     //turn_gen_offset_min : usize,
     //turn_gen_offset_iters : usize,
+    pub config: GameConfig,
 }
 
 #[derive(Debug, Serialize)]
@@ -61,7 +73,7 @@ fn pick_hidden_words<T: Space>(rand: &FroggyRand, embedding_space: &T) -> Vec<Wo
 }
 
 impl Game {
-    pub fn new<T: Space>(seed: &str, embedding_space: &T) -> Self {
+    pub fn new<T: Space>(seed: &str, embedding_space: &T, config: GameConfig) -> Self {
         let rng = froggy_rand::FroggyRand::new(0).subrand(seed);
         let deck = Deck::new(&rng);
 
@@ -75,7 +87,7 @@ impl Game {
             past_turns: Default::default(),
             current_turn: Default::default(),
             rng,
-            reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word: true,
+            config,
         }
     }
 
@@ -83,6 +95,7 @@ impl Game {
         seed: &str,
         hidden_words: [Word; 4],
         embedding_space: &T,
+        config: GameConfig,
     ) -> Self {
         let rng = froggy_rand::FroggyRand::new(0).subrand(seed);
         let deck = Deck::new(&rng);
@@ -94,7 +107,7 @@ impl Game {
             past_turns: Default::default(),
             current_turn: Default::default(),
             rng,
-            reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word: false,
+            config,
         }
     }
 
@@ -158,7 +171,8 @@ impl Game {
             id as usize,
             &self.hidden_words,
             embedding_space,
-            self.reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word,
+            self.config
+                .reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word,
         );
 
         let mut i = 0;
@@ -436,6 +450,11 @@ fn get_common_prefix_len(xs: &str, ys: &str) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_data::test::TestSpace;
+
+    const TEST_CONFIG: GameConfig = GameConfig {
+        reject_candidate_clues_closer_to_other_hidden_words_than_target_hidden_word: false,
+    };
 
     #[test]
     fn reject_common_prefix_len_test_postive() {
@@ -449,86 +468,10 @@ mod tests {
         assert!(!reject_common_prefix_len("camping", "tent"));
     }
 
-    struct TestSpace {
-        words: Vec<Word>,
-        vectors: Vec<Vec<f32>>,
-        strings: Vec<&'static str>,
-    }
-
-    impl TestSpace {
-        fn new() -> Self {
-            Self {
-                words: vec![
-                    Word(0),
-                    Word(1),
-                    Word(2),
-                    Word(3),
-                    Word(4),
-                    Word(5),
-                    Word(6),
-                    Word(7),
-                    Word(8),
-                    Word(9),
-                    Word(10),
-                    Word(11),
-                    Word(12),
-                    Word(13),
-                    Word(14),
-                    Word(15),
-                    Word(16),
-                    Word(17),
-                    Word(18),
-                    Word(19),
-                ],
-                vectors: vec![
-                    vec![0.1, 0.1],
-                    vec![0.1, 0.5],
-                    vec![0.1, 0.4],
-                    vec![0.1, 1.0],
-                    vec![1.0, 0.1],
-                    vec![1.0, 0.5],
-                    vec![1.0, 0.4],
-                    vec![1.0, 0.9],
-                    vec![0.5, 0.2],
-                    vec![0.5, 0.4],
-                    vec![0.5, 0.5],
-                    vec![0.5, 0.8],
-                    vec![0.2, 0.1],
-                    vec![0.2, 0.2],
-                    vec![0.2, 0.6],
-                    vec![0.2, 0.8],
-                    vec![0.7, 0.1],
-                    vec![0.7, 0.2],
-                    vec![0.7, 0.6],
-                    vec![0.7, 0.8],
-                ],
-                strings: vec![
-                    "black", "yellow", "brown", "white", "cow", "cat", "dog", "spider", "dan",
-                    "winsome", "froggy", "yianni", "chair", "desk", "sofa", "stool", "happy",
-                    "sad", "angry", "neutral",
-                ],
-            }
-        }
-    }
-
-    impl Space for TestSpace {
-        fn all_words(&self) -> &[Word] {
-            &self.words
-        }
-
-        fn get_vector(&self, word: Word) -> &[f32] {
-            &self.vectors[word.0]
-        }
-
-        fn get_string(&self, word: Word) -> &str {
-            &self.strings[word.0]
-        }
-    }
-
     #[test]
     fn test_telemetry_basic() {
         let space = TestSpace::new();
-        let game = Game::new("seed", &space);
+        let game = Game::new("seed", &space, TEST_CONFIG.clone());
 
         let telemetry_data = game.get_telemetry_data(&space);
         assert_eq!(telemetry_data.turns.len(), 0);
@@ -537,7 +480,12 @@ mod tests {
     #[test]
     fn test_telemetry_one_turn() {
         let space = TestSpace::new();
-        let mut game = Game::new_with_words("seed", [Word(0), Word(1), Word(2), Word(3)], &space);
+        let mut game = Game::new_with_words(
+            "seed",
+            [Word(0), Word(1), Word(2), Word(3)],
+            &space,
+            TEST_CONFIG.clone(),
+        );
         println!("{:#?}", game);
         game.next_turn(None, &space);
         println!("{:#?}", game);
@@ -548,6 +496,6 @@ mod tests {
 
         let telemetry_data = game.get_telemetry_data(&space);
         println!("{:#?}", telemetry_data);
-        assert_eq!(telemetry_data.turns.len(), 0);
+        assert_eq!(telemetry_data.turns.len(), 2);
     }
 }
