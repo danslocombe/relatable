@@ -4,9 +4,9 @@ use crate::game::*;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
-struct CompleteGame {
-    hidden_words: [String; 4],
-    turns: Vec<Turn>,
+pub struct CompleteGame {
+    pub hidden_words: [String; 4],
+    pub turns: Vec<Turn>,
 }
 
 impl CompleteGame {

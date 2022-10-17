@@ -1190,6 +1190,7 @@ dependencies = [
  "clap",
  "core",
  "futures",
+ "once_cell",
  "pretty_env_logger",
  "serde",
  "serde_derive",
