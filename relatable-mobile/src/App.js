@@ -122,18 +122,23 @@ function App() {
     init().then(() => {
 
       console.log("Running fetch");
-      const embedding_name = "fasttext_filtered.embspace";
-      fetch(embedding_name)
-        .then(response => response.blob())
-        .then(emb_space_blob => emb_space_blob.arrayBuffer())
-        .then(emb_space_arraybuffer => {
-            const emb_space_binary = new Uint8Array(emb_space_arraybuffer);
-            console.log(`Got embedding space size=${emb_space_binary.length}, initialising client`);
-            init_panic_hook();
-            let client_inst = new Client(emb_space_binary)
-            setup_new_game(client_inst);
-            setClient(client_inst);
-        });
+      //const embedding_name = "fasttext_filtered.embspace";
+      //fetch(embedding_name)
+      //  .then(response => response.blob())
+      //  .then(emb_space_blob => emb_space_blob.arrayBuffer())
+      //  .then(emb_space_arraybuffer => {
+      //      const emb_space_binary = new Uint8Array(emb_space_arraybuffer);
+      //      console.log(`Got embedding space size=${emb_space_binary.length}, initialising client`);
+      //      init_panic_hook();
+      //      let client_inst = new Client(emb_space_binary)
+      //      setup_new_game(client_inst);
+      //      setClient(client_inst);
+      //  });
+
+      var shim_client = ShimClient();
+      shim_client.new_game().then(() => {
+        setClient(shim_client);
+      })
     })
   }, []);
 
@@ -478,6 +483,41 @@ function Relatable({clues, groupAddedToState, submitGuess, wordSets, replayContr
       </div>
     </div>
   );
+}
+
+
+function ShimClient()
+{
+  return {
+    complete_game: null,
+    
+    new_game: async function (seed)
+    {
+      return fetch("/game?seed=" + seed)
+        .then((x) => x.json())
+        .then((x) => {
+          this.complete_game = x;
+        });
+    },    
+    
+    next_turn: function(input_0, input_1, input_2)
+    {
+      
+    },
+    
+    next_turn_noguess: function()
+    {
+      
+    },
+    
+    correct_guess_count: function()
+    {
+    },
+    
+    get_secret_words : function() {},
+    get_past_turns_json: function() {},    
+    get_current_turns: function() {}
+  }
 }
 
 
