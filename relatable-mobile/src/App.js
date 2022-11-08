@@ -103,6 +103,10 @@ const make_group_container = (id, words, lastStyling, actual_word) => {
   </div>);
 };
 
+function random_seed() {
+  return `game_id${Math.random()}`;
+}
+
 /*
 function setup_new_game(client_inst) {
   client_inst.new_game(`game_id${Math.random()}`);
@@ -139,7 +143,7 @@ function App() {
 
       var shim_client = ShimClient();
       console.log("Creating new shim client");
-      shim_client.new_game().then(() => {
+      shim_client.new_game(random_seed()).then(() => {
         shim_client.next_turn_noguess();
         shim_client.next_turn_noguess();
         shim_client.next_turn_noguess();
@@ -200,7 +204,6 @@ function App() {
   }, [replayController]);
 
   if (client) {
-    //if (client.correct_guess_count() == 2) {
     const {clues, wordSets, currentTurn, groupAddedToState} = buildup_turn_state(client, currentTurnRemapping, currentTurnMarking);
 
     //if (true) {
@@ -209,14 +212,15 @@ function App() {
       const turn_count = JSON.parse(client.get_past_turns_json()).length;
       
       const reset = () => {
-        setClient((c) => {
-          alert("FIXME");
-          //setup_new_game(c);
-          return c;
-        });
-        setCurrentTurnRemapping({});
-        setCurrentTurnMarking({});
-        setReplayController(null);
+        client.new_game(random_seed()).then(() => {
+          client.next_turn_noguess();
+          client.next_turn_noguess();
+          client.next_turn_noguess();
+          
+          setCurrentTurnRemapping({});
+          setCurrentTurnMarking({});
+          setReplayController(null);
+        })
       };
 
       return (<div className="App" style={{}}>
