@@ -143,6 +143,7 @@ function App() {
         shim_client.next_turn_noguess();
         shim_client.next_turn_noguess();
         shim_client.next_turn_noguess();
+        console.log(shim_client);
         setClient(shim_client);
       })
     })
@@ -204,7 +205,7 @@ function App() {
 
     //if (true) {
     if (client.correct_guess_count() == 2) {
-      let secret_words = JSON.parse(client.get_secret_words());
+      let secret_words = JSON.parse(client.get_secret_words_json());
       const turn_count = JSON.parse(client.get_past_turns_json()).length;
       
       const reset = () => {
@@ -495,6 +496,7 @@ function ShimClient()
     complete_game: null,
     current_turn: 0,
     player_guesses: {},
+    seed: "dummy_seed",
     
     new_game: async function (seed)
     {
@@ -504,6 +506,7 @@ function ShimClient()
           this.complete_game = x;
           this.current_turn = 0;
           this.player_guesses = {};
+          this.seed = seed;
         });
     },    
     
@@ -521,18 +524,15 @@ function ShimClient()
     correct_guess_count: function()
     {
       let count = 0;
-      for (const [turn_number, guesses] in Object.entries)
+      for (const [turn_number, guesses] of Object.entries(this.player_guesses))
       {        
         const actual_message = this.complete_game.turns[turn_number].message
         
         let all_match = true;
         
+        // Assume same length
         for (const i in guesses) {
-          const guess = guesses[i];
-          const actual = this.complete_game.hidden_words[actual_message[i]];
-          
-          if (guess === actual) {
-            
+          if (guesses[i] === actual_message[i]) {
             // Ok
           }
           else {
@@ -549,12 +549,15 @@ function ShimClient()
       return count;
     },
     
-    get_secret_words : function() {return this.complete_game.hidden_words},
+    get_secret_words_json : function() {return JSON.stringify(this.complete_game.hidden_words)},
     get_past_turns_json: function() {
       return JSON.stringify(this.complete_game.turns.slice(0,this.current_turn));
     },    
     get_current_turn_json: function() {
       return JSON.stringify(this.complete_game.turns[this.current_turn])
+    },
+    get_seed: function() {
+      return this.seed;
     }
   }
 }
