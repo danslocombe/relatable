@@ -18,6 +18,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "build:dev": "dotenv -e .env.development react-scripts build",
+    "build:dan": "react-scripts build --mode development",
     "build:wasm": "cd ../web-client && wasm-pack build --target web --out-dir pkg-mobile",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

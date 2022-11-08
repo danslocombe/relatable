@@ -103,12 +103,14 @@ const make_group_container = (id, words, lastStyling, actual_word) => {
   </div>);
 };
 
+/*
 function setup_new_game(client_inst) {
   client_inst.new_game(`game_id${Math.random()}`);
   client_inst.next_turn_noguess();
   client_inst.next_turn_noguess();
   client_inst.next_turn_noguess();
 }
+*/
 
 function App() {
   const [client, setClient] = useState();
@@ -136,7 +138,11 @@ function App() {
       //  });
 
       var shim_client = ShimClient();
+      console.log("Creating new shim client");
       shim_client.new_game().then(() => {
+        shim_client.next_turn_noguess();
+        shim_client.next_turn_noguess();
+        shim_client.next_turn_noguess();
         setClient(shim_client);
       })
     })
@@ -203,7 +209,8 @@ function App() {
       
       const reset = () => {
         setClient((c) => {
-          setup_new_game(c);
+          alert("FIXME");
+          //setup_new_game(c);
           return c;
         });
         setCurrentTurnRemapping({});
@@ -349,8 +356,6 @@ function buildup_turn_state(client, currentTurnRemapping, marking) {
 }
 
 function Relatable({clues, groupAddedToState, submitGuess, wordSets, replayController, onAddWord, onRemoveWord}) {
-  //console.log("GATS");
-  //console.log(groupAddedToState);
   const [currentClue, setCurrentClue] = useState(0);
   const [currentGroup, setCurrentGroup] = useState(0);
 
@@ -368,14 +373,12 @@ function Relatable({clues, groupAddedToState, submitGuess, wordSets, replayContr
   if ((swipeStart != null && swipeCurrent != null && !(groupAddedToState[currentGroup])))
   {
     swiping_down = Math.min(1, Math.max(0, swipeCurrent.y - swipeStart.y - 80) / 50);
-    //console.log("swiping_down: " + swiping_down);
   }
   
   let swiping_up = 0;
   if ((swipeStart != null && swipeCurrent != null && groupAddedToState[currentGroup]))
   {
     swiping_up = Math.min(1, Math.max(0, swipeStart.y - swipeCurrent.y - 80) / 50);
-    //console.log("swiping_up: " + swiping_up);
   }
 
   const handleClueSwipeStart = (event) => {
@@ -490,6 +493,8 @@ function ShimClient()
 {
   return {
     complete_game: null,
+    current_turn: 0,
+    player_guesses: {},
     
     new_game: async function (seed)
     {
@@ -497,26 +502,60 @@ function ShimClient()
         .then((x) => x.json())
         .then((x) => {
           this.complete_game = x;
+          this.current_turn = 0;
+          this.player_guesses = {};
         });
     },    
     
     next_turn: function(input_0, input_1, input_2)
     {
-      
+      this.player_guesses[this.current_turn] = [input_0, input_1, input_2];
+      this.current_turn += 1;
     },
     
     next_turn_noguess: function()
     {
-      
+      this.current_turn += 1;
     },
     
     correct_guess_count: function()
     {
+      let count = 0;
+      for (const [turn_number, guesses] in Object.entries)
+      {        
+        const actual_message = this.complete_game.turns[turn_number].message
+        
+        let all_match = true;
+        
+        for (const i in guesses) {
+          const guess = guesses[i];
+          const actual = this.complete_game.hidden_words[actual_message[i]];
+          
+          if (guess === actual) {
+            
+            // Ok
+          }
+          else {
+            all_match = false;
+            break;
+          }
+        }
+        
+        if (all_match) {
+          count += 1;
+        }
+      }
+      
+      return count;
     },
     
-    get_secret_words : function() {},
-    get_past_turns_json: function() {},    
-    get_current_turns: function() {}
+    get_secret_words : function() {return this.complete_game.hidden_words},
+    get_past_turns_json: function() {
+      return JSON.stringify(this.complete_game.turns.slice(0,this.current_turn));
+    },    
+    get_current_turn_json: function() {
+      return JSON.stringify(this.complete_game.turns[this.current_turn])
+    }
   }
 }
 
