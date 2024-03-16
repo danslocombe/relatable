@@ -15,6 +15,12 @@ else
     console.log("Using daily seed '" + game_seed + "'");
 }
 
+window.history.replaceState({}, '', '/?seed=' + game_seed);
+
+document.getElementById("apply_seed").addEventListener("click", () => {
+    window.location.replace('/?seed=' + document.getElementById('game_seed_input').value);
+});
+
 var client = undefined;
 
 var hidden_word_colours = ["#FCDDFF", "#FFFFCF", "#D9FFDF", "#D9FFFF"];
@@ -91,7 +97,8 @@ function add_turn(table_body, turn, current_turn)
         for (let i = 0; i < 3; i++)
         {
             const new_cell = input_row.insertCell(-1);
-            new_cell.innerHTML = '<input type="text" id="input_' + i.toString() + '" inputmode="numeric" pattern="[1-4]" placeholder="Guess 0-3">';
+            //new_cell.innerHTML = '<input type="text" id="input_' + i.toString() + '" inputmode="numeric" pattern="[1-4]" placeholder="Guess 0-3">';
+            new_cell.innerHTML = '<select id="input_' + i.toString() + '"><option value="">Guess</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>';
             let input = document.getElementById("input_" + i.toString());
             input_objs.push(input);
         }
@@ -301,6 +308,7 @@ function reset_game(seed)
     });
 
     document.getElementById("game_seed_input").value = seed;
+
     client.new_game(seed);
     client.next_turn_noguess();
     client.next_turn_noguess();
