@@ -2,6 +2,8 @@
 import { Client } from "../pkg/index.js"
 
 const query_string = window.location.search;
+const pathname = window.location.pathname;
+
 let url_params = new URLSearchParams(query_string);
 
 var game_seed = "daily-" + (new Date().toISOString().slice(0, 10));
@@ -15,7 +17,7 @@ else
     console.log("Using daily seed '" + game_seed + "'");
 }
 
-window.history.replaceState({}, '', '/?seed=' + game_seed);
+window.history.replaceState({}, '', pathname + '?seed=' + game_seed);
 
 document.getElementById("apply_seed").addEventListener("click", () => {
     window.location.replace('/?seed=' + document.getElementById('game_seed_input').value);
@@ -286,7 +288,7 @@ const embedding_name = "fasttext_filtered.embspace";
 
 console.log("Fetching embedding " + embedding_name);
 
-fetch(embedding_name)
+fetch(pathname + embedding_name)
     .then(response => response.blob())
     .then(emb_space_blob => emb_space_blob.arrayBuffer())
     .then(emb_space_arraybuffer => {
